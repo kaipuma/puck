@@ -104,6 +104,10 @@ class Option:
 class OptionsError(cmds.CommandError): pass
 class OptionsConverter(cmds.Converter):
 	"""Converts command options"""
+	def __init__(self, allowed = None, *args, **kwargs):
+		super(*args, **kwargs)
+		self.allowed = allowed
+
 	async def convert(self, ctx, arg):
 		if arg.startswith("--"):
 			raise OptionsError("Explicit end of options list")
@@ -113,7 +117,11 @@ class OptionsConverter(cmds.Converter):
 		if "=" in arg[2:]:
 			value = arg[arg.index("=")+1:]
 			name = arg[1:arg.index("=")]
+			if self.allowed is not None and name not in self.allowed:
+				raise OptionsError("Not a valid option")
 			return Option(name, value)
 		else:
 			name = arg[1:]
+			if self.allowed is not None and name not in self.allowed:
+				raise OptionsError("Not a valid option")
 			return Option(name)

@@ -11,7 +11,7 @@ class RPG(cmds.Cog):
 	async def roll(
 			self, 
 			ctx, 
-			options: cmds.Greedy[OptionsConverter], 
+			options: cmds.Greedy[OptionsConverter(["x", "xx"])], 
 			entries: cmds.Greedy[Union[ModifierConverter, DiceConverter]], 
 			*, 
 			tag: str = ""
