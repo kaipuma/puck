@@ -1,7 +1,6 @@
 from discord.ext import commands as cmds
 import discord
 from random import randint, choice
-from enum import Enum, auto
 
 class Dice:
 	max_explode = 100
@@ -126,87 +125,3 @@ class OptionsConverter(cmds.Converter):
 			if self.allowed is not None and name not in self.allowed:
 				raise OptionsError("Not a valid option")
 			return Option(name)
-
-class SwEnum(Enum):
-	BOOST = auto()
-	ABILITY = auto()
-	PROFICIENCY = auto()
-	SETBACK = auto()
-	DIFFICULTY = auto()
-	CHALLENGE = auto()
-	FORCE = auto()
-
-	SUCCESS = auto()
-	ADVANTAGE = auto()
-	TRIUMPH = auto()
-	FALURE = auto()
-	THREAT = auto()
-	DISPAIR = auto()
-	LIGHT = auto()
-	DARK = auto()
-
-class Sw(Enum):
-	S = SwEnum.SUCCESS
-	A = SwEnum.ADVANTAGE
-	TR = SwEnum.TRIUMPH
-	F = SwEnum.FALURE
-	T = SwEnum.THREAT
-	DI = SwEnum.DISPAIR
-	LS = SwEnum.LIGHT
-	DS = SwEnum.DARK
-
-class SwError(cmds.CommandError): pass
-
-class SwDie:
-	values = {
-		SwEnum.BOOST: (tuple(), tuple(), (Sw.S,), (Sw.S, Sw.A), (Sw.A, Sw.A), (Sw.A,)),
-		SwEnum.ABILITY: (tuple(), (Sw.S,), (Sw.S,), (Sw.S, Sw.S), (Sw.A,), (Sw.A,), (Sw.S, Sw.A), (Sw.A, Sw.A)),
-		SwEnum.PROFICIENCY: (tuple(), (Sw.S,), (Sw.S,), (Sw.S, Sw.S), (Sw.S, Sw.S), (Sw.A,), (Sw.S, Sw.A), (Sw.S, Sw.A), (Sw.S, Sw.A), (Sw.A, Sw.A), (Sw.A, Sw.A), (Sw.TR,)),
-		SwEnum.SETBACK: (tuple(), tuple(), (Sw.F,), (Sw.F,), (Sw.T,), (Sw.T,)),
-		SwEnum.DIFFICULTY: (tuple(), (Sw.F,), (Sw.F, Sw.F), (Sw.T,), (Sw.T,), (Sw.T,), (Sw.T, Sw.T), (Sw.F, Sw.T)),
-		SwEnum.CHALLENGE: (tuple(), (Sw.F,), (Sw.F,), (Sw.F, Sw.F), (Sw.F, Sw.F), (Sw.T,), (Sw.T,), (Sw.F, Sw.T), (Sw.F, Sw.T), (Sw.T, Sw.T), (Sw.T, Sw.T), (Sw.DI,)),
-		SwEnum.FORCE: ((Sw.DS,), (Sw.DS,), (Sw.DS,), (Sw.DS,), (Sw.DS,), (Sw.DS,), (Sw.DS, Sw.DS), (Sw.LS,), (Sw.LS,), (Sw.LS, Sw.LS), (Sw.LS, Sw.LS), (Sw.LS, Sw.LS))
-	}
-
-	aliases = {
-		SwEnum.BOOST: ("boost", "blue"),
-		SwEnum.ABILITY: ("ability", "green"),
-		SwEnum.PROFICIENCY: ("proficiency", "yellow"),
-		SwEnum.SETBACK: ("setback", "black"),
-		SwEnum.DIFFICULTY: ("difficulty", "purple"),
-		SwEnum.CHALLENGE: ("challenge", "red"),
-		SwEnum.FORCE: ("force", "white")
-	}
-
-	@classmethod
-	def validate(cls, text):
-		if isinstance(text, SwEnum): return text
-		text = text.lower()
-
-		matches = {"strong": set(), "weak": set()}
-		for die, aliases in cls.aliases.items():
-			for alias in aliases:
-				if alias.startswith(text):
-					matches["strong"].add(die)
-				elif text in alias:
-					matches["weak"].add(die)
-
-		if len(matches["strong"]) == 1:
-			return matches["strong"].pop()
-		elif len(matches["weak"]) == 1:
-			return matches["weak"].pop()
-		else:
-			return list(matches["strong"] | matches["weak"])
-
-	def __init__(self, raw_name):
-		name = type(self).validate(raw_name)
-		if not isinstance(name, SwEnum):
-			if name:
-				raise SwError(f"Too many possible matches for {raw_name}: {str(name)[1:-1]}")
-			raise SwError(f"No matches for {raw_name}.")
-
-		self.name = name
-		self.values = type(self).values[name]
-
-	def roll(self):
-		return choice(self.values)
