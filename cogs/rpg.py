@@ -1,7 +1,7 @@
 from discord.ext import commands as cmds
 from typing import Optional, Union
 
-from .rpgcore import OptionsConverter, ModifierConverter, DiceConverter, Dice
+from .rpgcore import OptionsConverter, ModifierConverter, DiceConverter, Dice, SwEnum, SwDie
 
 class RPG(cmds.Cog):
 	def __init__(self, bot):
@@ -60,3 +60,31 @@ class RPG(cmds.Cog):
 		msg += "\n```"
 
 		await ctx.send(msg)
+
+	@cmds.command(aliases=["starwars"], brief="Roll Star Wars dice")
+	async def sw(self, ctx, *, dice: str):
+		"""
+		Simulate the result of rolling dice for the Fantasy Flight Games Star Wars RPG. The dice pool is constructed by listing pairs of number, dice combos. For example:
+		3 boost, 2 green, 1 prof, 3 difficulty, 1 force
+
+		Dice names can be given in many forms, as seen above. The real name of the die can be used (such as "boost" or "difficulty"), or the color of the die (like "green" or "red"), or some substring of those names (such as "prof" being short for "proficiency", or "purp" short for "purple").
+		Shortened names only work if they're unique (for example, "bl" could be for "blue" or "black", so is invalid). 
+		The number of those dice to roll must be a numeric value. So "3" is valid, but "three" is not. Additionally, the value is required, even if it's only one of that die.
+		Lastly, any non-alpha-numeric characters are ignored. So feel free to separate the list by commas, or ampersands, or nothing, at your leisure.
+		For example, "1g1y2d1f" is a valid command, though not advised, as it's harder for a human to see that you wanted to roll 1 green, 1 yellow, 2 difficulty, and 1 force die.
+		"""
+		# remove all non-alpha-numeric characters
+		dice = "".join(filter(str.isalnum, dice))
+		cval = ""
+		ctype = str
+		tokens = []
+		for c in dice:
+			if ctype is int and c.isdigit()\
+			or ctype is str and c.isalpha():
+				cval += c
+			else:
+				tokens.append(cval)
+				cval = ""
+				ctype = int if ctype is str else str
+
+		print(tokens)
