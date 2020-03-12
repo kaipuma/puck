@@ -65,7 +65,7 @@ class RPG(cmds.Cog):
 	async def gm(self):
 		"""
 		A series of subcommands for gm use. 
-		Only those with the proper gm role can use these.
+		Only those with the gm role can use these.
 		"""
 		pass
 
@@ -77,11 +77,11 @@ class RPG(cmds.Cog):
 		"""
 		pass
 
-	@cmds.group(invoke_without_command=True, name="x", brief="X-Card commands")
+	@cmds.group(invoke_without_command=True, aliases=["x"], brief="X-Card commands")
 	async def xcard(self):
 		"""
 		Invokes the x-card. This indicates to the gm (and anyone else who's subscribed to x-card alerts) that the current topic of conversation is uncomfortable for you. 
-		This is anonymous by default, and can be invoked from a direct message to the bot to keep that anonymity.
+		This is anonymous by default, and ought to be invoked from a direct message to me (the bot) to keep that anonymity.
 		"""
 		pass
 
@@ -90,7 +90,7 @@ class RPG(cmds.Cog):
 		"""
 		Makes an invocation of the x-card public. 
 		This adds your username to the x-card announcement.
-		Know that anyone can subscribe to these announcements, so more than just the gm may see your name. If you want to make your identity known only to the gm, use the "public" subcommand.
+		Know that anyone can subscribe to these announcements, so more than just the gm may see your name. If you want to make your identity known only to the gm, use the "private" subcommand.
 		"""
 		pass
 
@@ -98,7 +98,7 @@ class RPG(cmds.Cog):
 	async def xcard_private(self):
 		"""
 		Make a normal, anonymous announcement of an x-card trigger, but also send a direct message to the active gm with your username.
-		The gm will claim to be the active gm with the "gm" command. Only someone with the proper gm role can claim control over these alerts. Keep in mind that anyone with the role can claim gm control.
+		The gm will claim to be the active gm with the "gm claim" command. Anyone with the gm role can claim active gm. Nobody without that role can claim it.
 		"""
 		pass
 
