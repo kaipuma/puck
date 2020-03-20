@@ -93,58 +93,17 @@ class RPG(cmds.Cog):
 
 		await ctx.send(tag, embed=msg)
 
-	@cmds.group(brief="gm commands")
-	async def gm(self):
+	@cmds.group(name="set", brief="set various variables")
+	async def rpg_set(self, ctx):
 		"""
-		A series of subcommands for gm use. 
-		Only those with the gm role can use these.
-		"""
-		pass
-
-	@gm.command(name="claim", brief="Claim to be the active gm")
-	async def gm_claim(self):
-		"""
-		This command will claim you as the current active gm. 
-		This is relevant to things such as getting the private x-card alerts.
+		Set one of the following variables for the bot:
+		spam - set this channel as the one to send general messages to.
 		"""
 		pass
 
 	@cmds.group(invoke_without_command=True, aliases=["x"], brief="X-Card commands")
 	async def xcard(self):
 		"""
-		Invokes the x-card. This indicates to the gm (and anyone else who's subscribed to x-card alerts) that the current topic of conversation is uncomfortable for you. 
-		This is anonymous by default, and ought to be invoked from a direct message to me (the bot) to keep that anonymity.
-		"""
-		pass
-
-	@xcard.command(name="public", brief="Make x-card invoke public")
-	async def xcard_public(self):
-		"""
-		Makes an invocation of the x-card public. 
-		This adds your username to the x-card announcement.
-		Know that anyone can subscribe to these announcements, so more than just the gm may see your name. If you want to make your identity known only to the gm, use the "private" subcommand.
-		"""
-		pass
-
-	@xcard.command(name="private", brief="Show the gm your identity")
-	async def xcard_private(self):
-		"""
-		Make a normal, anonymous announcement of an x-card trigger, but also send a direct message to the active gm with your username.
-		The gm will claim to be the active gm with the "gm claim" command. Anyone with the gm role can claim active gm. Nobody without that role can claim it.
-		"""
-		pass
-
-	@xcard.command(name="subscribe", aliases=["sub"], brief="Subscribe to x-card alerts")
-	async def xcard_subscribe(self):
-		"""
-		Gain access to the channel where alerts are sent whenever someone activates the x-card. These are usually anonymous.
-		Note, this channel will mention everyone in it whenever the x-card is triggered.
-		"""
-		pass
-
-	@xcard.command(name="unsubscribe", aliases=["unsub"], brief="Unsubscribe from x-card alerts")
-	async def xcard_unsubscribe(self):
-		"""
-		Lose access to the x-card alert channel. See the documentation of the "subscribe" subcommand for more.
+		Invokes the x-card. This sends a message to the designated spam channel announcing that someone anonymous has invoked the x-card.
 		"""
 		pass
