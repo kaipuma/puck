@@ -58,7 +58,7 @@ class RPG(cmds.Cog):
 			desc += f"* Dice are exploding\n"
 
 		msg = Embed(
-			color = Color.from_rgb(0, 255, 0),
+			color = Color.from_rgb(0, 0, 255),
 			title = f"Rolling: {ctx.message.content[len(ctx.invoked_with)+2:]}",
 			description = desc or None
 		)
@@ -93,17 +93,35 @@ class RPG(cmds.Cog):
 
 		await ctx.send(tag, embed=msg)
 
-	@cmds.group(name="set", brief="set various variables")
-	async def rpg_set(self, ctx):
-		"""
-		Set one of the following variables for the bot:
-		spam - set this channel as the one to send general messages to.
-		"""
-		pass
-
 	@cmds.group(invoke_without_command=True, aliases=["x"], brief="X-Card commands")
-	async def xcard(self):
+	async def xcard(self, ctx):
 		"""
 		Invokes the x-card. This sends a message to the designated spam channel announcing that someone anonymous has invoked the x-card.
 		"""
-		pass
+		ebd = Embed(
+			color = Color.from_rgb(255, 0, 0),
+			title = "Someone has tapped the X card!",
+			description = "Please cease the current topic of conversation"
+		)
+
+		channels = []
+		data = ctx.bot.data
+		# for any guild the bot is in
+		for guild in ctx.bot.guilds:
+			# skip any guild the sender isn't in
+			if not guild.get_member(ctx.author.id): continue
+
+			# find the channel in any shared guilds to send msg to
+			if str(guild.id) in data and "spam" in data[str(guild.id)]:
+				# if a bot spam channel has been set, send it there
+				channel_id = int(ctx.bot.data[str(guild.id)]["spam"])
+				channels.append(guild.get_channel(channel_id))
+			else:
+				# otherwise, send it to the system channel
+				syschan = guild.system_channel
+				# last ditch, send it to the first channel listed
+				channels.append(syschan or guild.text_channels[0])
+
+		# send those messages
+		for channel in channels:
+			await channel.send("@here", embed = ebd)
