@@ -132,7 +132,7 @@ class RPG(cmds.Cog):
 		await ctx.send(tag, embed=msg)
 
 	@cmds.command(aliases=["x"], brief="Invoke the x-card")
-	async def xcard(self, ctx, tag: Optional[str] = ""):
+	async def xcard(self, ctx, *, tag: Optional[str] = ""):
 		"""
 		Invokes the x-card. The x-card is a device used to indicate that the current topic of conversation is making you uncomfortable. Please don't be embarrassed to use it, especially since it can be used anonymously (by sending the command to the bot in a direct message). It will send a message to the designated spam channel announcing that someone anonymous has invoked the x-card.
 		"""
@@ -142,7 +142,7 @@ class RPG(cmds.Cog):
 			await channel.send(msg, embed = ebd)
 
 	@cmds.command(aliases=["o"], brief="Invoke the o-card")
-	async def ocard(self, ctx, tag: Optional[str] = ""):
+	async def ocard(self, ctx, *, tag: Optional[str] = ""):
 		"""
 		Invokes the o-card. This is the inverse of the x-card. Using this indicates that you're loving the current role-play, as an encouragement. This sends a message to the designated spam channel announcing that someone anonymous has invoked the o-card.
 		"""
