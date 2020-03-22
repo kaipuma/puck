@@ -13,12 +13,50 @@ class RPG(cmds.Cog):
 	def __init__(self, bot):
 		self.bot = bot
 
-	def parse_emoji(self, ctx, text):
+	def _parse_emoji(self, ctx, text):
 		for name in set(self.emoji_exp.findall(text)):
 			emoji = utils.get(ctx.guild.emojis, name=name)
 			if emoji is None: continue
 			text = text.replace(f":{name}:", str(emoji))
 		return text
+
+	def _gencard(self, cardtype, tag = ""):
+		"""Generates the message and embed for an x- or o-card invoke"""
+		if cardtype == "x":
+			title = "Someone has tapped the X card!"
+			desc = "Please cease the current topic of conversation."
+			color = Color.from_rgb(255, 0, 0)
+		elif cardtype == "o":
+			title = "Someone has tapped the O card!"
+			desc = "Keep up the good work!"
+			color = Color.from_rgb(0, 255, 0)
+
+		if tag:
+			desc += f"\nSpecifically they mentioned \"{tag}\"."
+
+		return ("@here", Embed(color = color, title = title, description = desc))
+
+	def _getshared(self, ctx):
+		"""Gets a list of spam channels shared by the ctx.author and the bot"""
+		channels = []
+		data = ctx.bot.data
+		# for any guild the bot is in
+		for guild in ctx.bot.guilds:
+			# skip any guild the sender isn't in
+			if not guild.get_member(ctx.author.id): continue
+
+			# find the channel in any shared guilds to send msg to
+			if str(guild.id) in data and "spam" in data[str(guild.id)]:
+				# if a bot spam channel has been set, send it there
+				channel_id = int(ctx.bot.data[str(guild.id)]["spam"])
+				channels.append(guild.get_channel(channel_id))
+			else:
+				# otherwise, send it to the system channel
+				syschan = guild.system_channel
+				# last ditch, send it to the first channel listed
+				channels.append(syschan or guild.text_channels[0])
+
+		return channels
 
 	@cmds.command(aliases=["r"], brief="Roll some dice")
 	async def roll(
@@ -65,7 +103,7 @@ class RPG(cmds.Cog):
 
 		msg.add_field(
 			name = f"Result{'s' if len(entries) > 1 else ''}:",
-			value = self.parse_emoji(ctx, "\n".join(map(str, entries))),
+			value = self._parse_emoji(ctx, "\n".join(map(str, entries))),
 			inline = False
 		)
 
@@ -87,41 +125,28 @@ class RPG(cmds.Cog):
 
 		msg.add_field(
 			name = f"Total{'s' if len(categorized) > 1 else ''}:",
-			value = self.parse_emoji(ctx, ", ".join(totals)),
+			value = self._parse_emoji(ctx, ", ".join(totals)),
 			inline = False
 		)
 
 		await ctx.send(tag, embed=msg)
 
-	@cmds.group(invoke_without_command=True, aliases=["x"], brief="X-Card commands")
-	async def xcard(self, ctx):
+	@cmds.command(aliases=["x"], brief="Invoke the x-card")
+	async def xcard(self, ctx, tag: Optional[str] = ""):
 		"""
-		Invokes the x-card. This sends a message to the designated spam channel announcing that someone anonymous has invoked the x-card.
+		Invokes the x-card. The x-card is a device used to indicate that the current topic of conversation is making you uncomfortable. Please don't be embarrassed to use it, especially since it can be used anonymously (by sending the command to the bot in a direct message). It will send a message to the designated spam channel announcing that someone anonymous has invoked the x-card.
 		"""
-		ebd = Embed(
-			color = Color.from_rgb(255, 0, 0),
-			title = "Someone has tapped the X card!",
-			description = "Please cease the current topic of conversation"
-		)
 
-		channels = []
-		data = ctx.bot.data
-		# for any guild the bot is in
-		for guild in ctx.bot.guilds:
-			# skip any guild the sender isn't in
-			if not guild.get_member(ctx.author.id): continue
+		msg, ebd = self._gencard("x", tag)
+		for channel in self._getshared(ctx):
+			await channel.send(msg, embed = ebd)
 
-			# find the channel in any shared guilds to send msg to
-			if str(guild.id) in data and "spam" in data[str(guild.id)]:
-				# if a bot spam channel has been set, send it there
-				channel_id = int(ctx.bot.data[str(guild.id)]["spam"])
-				channels.append(guild.get_channel(channel_id))
-			else:
-				# otherwise, send it to the system channel
-				syschan = guild.system_channel
-				# last ditch, send it to the first channel listed
-				channels.append(syschan or guild.text_channels[0])
+	@cmds.command(aliases=["o"], brief="Invoke the o-card")
+	async def ocard(self, ctx, tag: Optional[str] = ""):
+		"""
+		Invokes the o-card. This is the inverse of the x-card. Using this indicates that you're loving the current role-play, as an encouragement. This sends a message to the designated spam channel announcing that someone anonymous has invoked the o-card.
+		"""
 
-		# send those messages
-		for channel in channels:
-			await channel.send("@here", embed = ebd)
+		msg, ebd = self._gencard("o", tag)
+		for channel in self._getshared(ctx):
+			await channel.send(msg, embed = ebd)
