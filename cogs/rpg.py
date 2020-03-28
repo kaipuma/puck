@@ -2,6 +2,7 @@ from discord.ext import commands as cmds
 import discord.utils as utils
 from discord import Embed, Color
 from typing import Optional, Union
+from random import shuffle
 import re
 
 from .rpgcore import OptionsConverter, DiceConverter, Standard
@@ -9,6 +10,9 @@ from .rpgcore import OptionsConverter, DiceConverter, Standard
 class RPG(cmds.Cog):
 	# compile the regex for discord emoji
 	emoji_exp = re.compile(r":(\w+?):")
+	# compile the regex for multiplying e.g. "thisx5"
+	# match only positive numbers, otherwise match all as group 1
+	mult_exp = re.compile(r"(.*?)(?:[xX](?=(?!0))(\d+))?$")
 
 	def __init__(self, bot):
 		self.bot = bot
@@ -150,3 +154,37 @@ class RPG(cmds.Cog):
 		msg, ebd = self._gencard("o", tag)
 		for channel in self._getshared(ctx):
 			await channel.send(msg, embed = ebd)
+
+	@cmds.group(invoke_without_command=True, aliases=["spectaculars", "spectacular"], brief="Commands for Spectaculars")
+	async def spec(self, ctx):
+		"""The group of commands for the Spectaculars tabletop rpg."""
+		pass
+
+	@spec.command(name="i", aliases=["init", "initiative"], brief="Randomize initiative")
+	async def initiative(self, ctx, *choices: str):
+		"""
+		Given a list of names, output that list shuffled.
+		Allows options to be given in the form "thisXnum", which will add "num" instances of "this" to the pool.
+		For example, "Crash Paragon Nautica villainX3" would output a list six people long.
+		Of note:
+		- "X" isn't case sensitive
+		- The number must be positive
+		- Multi-word names can be accomplished by surrounding the whole choice in quotes (e.g. "Death Bladex4" would put four "Death Blade"s on the list).
+		"""
+		final = []
+		for c in choices:
+			# split all in form thingXnum 
+			base, mult = self.mult_exp.match(c).groups()
+			# int(mult), or 1 if mult is None
+			mult = mult and int(mult) or 1
+			for _ in range(mult):
+				final.append(base)
+
+		shuffle(final)
+		ebd = Embed(
+			color = Color.from_rgb(0, 0, 255),
+			title = "Your shuffled initiative is:",
+			description = "\n".join(final)
+		)
+
+		await ctx.send(embed=ebd)
