@@ -1,0 +1,173 @@
+{
+	"spectaculars":
+	{
+		"faces":
+		{
+			"advantage":
+			[
+				":spec-boon:",
+				":spec-boon:",
+				":spec-boon:",
+				":spec-boon:",
+				":spec-blank:",
+				":spec-blank:",
+				":spec-blank:",
+				":spec-blank:"
+			],
+
+			"challenge":
+			[
+				":spec-drawback:",
+				":spec-drawback:",
+				":spec-drawback:",
+				":spec-drawback:",
+				":spec-drawback:",
+				":spec-drawback:",
+				":spec-blank:",
+				":spec-blank:",
+				":spec-blank:",
+				":spec-blank:"
+			],
+		},
+
+		"aliases":
+		{
+			"advantage": ["a", "adv"],
+			"challenge": ["c", "chal"]
+		},
+
+		"cancels":
+		[
+			[[":spec-boon:"], [":spec-drawback:"]]
+		],
+
+		"empty": [":spec-blank:"],
+
+		"defaut": ":spec-blank:"
+	},
+
+	"starwars":
+	{
+		"faces":
+		{
+			"proficiency":
+			[
+				":sw-yellow-triumph::sw-yellow-success:",
+				":sw-yellow-success::sw-yellow-success:",
+				":sw-yellow-success::sw-yellow-success:",
+				":sw-yellow-success::sw-yellow-advantage:",
+				":sw-yellow-success::sw-yellow-advantage:",
+				":sw-yellow-success::sw-yellow-advantage:",
+				":sw-yellow-advantage::sw-yellow-advantage:",
+				":sw-yellow-advantage::sw-yellow-advantage:",
+				":sw-yellow-success:",
+				":sw-yellow-success:",
+				":sw-yellow-advantage:",
+				":sw-yellow-blank:"
+			],
+
+			"ability":
+			[
+				":sw-green-success::sw-green-success:",
+				":sw-green-success::sw-green-advantage:",
+				":sw-green-advantage::sw-green-advantage:",
+				":sw-green-success:",
+				":sw-green-success:",
+				":sw-green-advantage:",
+				":sw-green-advantage:",
+				":sw-green-blank:"
+			],
+
+			"boost":
+			[
+				":sw-blue-success::sw-blue-advantage:",
+				":sw-blue-advantage::sw-blue-advantage:",
+				":sw-blue-success:",
+				":sw-blue-advantage:",
+				":sw-blue-blank:",
+				":sw-blue-blank:"
+			],
+
+			"challenge":
+			[
+				":sw-red-despair::sw-red-failure:",
+				":sw-red-failure::sw-red-failure:",
+				":sw-red-failure::sw-red-failure:",
+				":sw-red-failure::sw-red-threat:",
+				":sw-red-failure::sw-red-threat:",
+				":sw-red-threat::sw-red-threat:",
+				":sw-red-threat::sw-red-threat:",
+				":sw-red-failure:",
+				":sw-red-failure:",
+				":sw-red-threat:",
+				":sw-red-threat:",
+				":sw-red-blank:",
+			],
+
+			"difficulty":
+			[
+				":sw-purple-failure::sw-purple-failure:",
+				":sw-purple-failure::sw-purple-threat:",
+				":sw-purple-threat::sw-purple-threat:",
+				":sw-purple-failure:",
+				":sw-purple-threat:",
+				":sw-purple-threat:",
+				":sw-purple-threat:",
+				":sw-purple-blank:"
+			],
+
+			"setback":
+			[
+				":sw-black-failure:",
+				":sw-black-failure:",
+				":sw-black-threat:",
+				":sw-black-threat:",
+				":sw-black-blank:",
+				":sw-black-blank:"
+			],
+
+			"force":
+			[
+				":sw-white-light::sw-white-light:",
+				":sw-white-light::sw-white-light:",
+				":sw-white-light::sw-white-light:",
+				":sw-white-light:",
+				":sw-white-light:",
+				":sw-white-dark::sw-white-dark:",
+				":sw-white-dark:",
+				":sw-white-dark:",
+				":sw-white-dark:",
+				":sw-white-dark:",
+				":sw-white-dark:",
+				":sw-white-dark:"
+			],
+		},
+
+		"aliases":
+		{
+			"proficiency": ["yellow", "y", "prof", "pr"],
+			"ability": ["green", "g", "abi", "abil", "a"],
+			"boost": ["blue", "b", "bst"],
+			"challenge": ["red", "r", "chal", "c"],
+			"difficulty": ["purple", "p", "diff", "dif", "d"],
+			"setback": ["black", "bk", "k", "set", "setb", "sb", "s"],
+			"force": ["white", "w", "for", "f"]
+		},
+
+		"cancels":
+		[
+			[
+				[":sw-yellow-success:", ":sw-green-success:", ":sw-blue-success:", ":sw-generic-success:"],
+				[":sw-red-failure:", ":sw-purple-failure:", ":sw-black-failure:", ":sw-generic-failure:"]
+			],
+			[
+				[":sw-yellow-advantage:", ":sw-green-advantage:", ":sw-blue-advantage:", ":sw-generic-advantage"],
+				[":sw-red-threat:", ":sw-purple-threat:", ":sw-black-threat:", "sw-generic-threat"]
+			]
+		],
+
+		"empty": [":sw-yellow-blank:", ":sw-green-blank:", ":sw-blue-blank:", ":sw-red-blank:", ":sw-purple-blank:", ":sw-black-blank:", ":sw-generic-blank:"],
+
+		"defaut": ":sw-generic-blank:"
+	}
+}

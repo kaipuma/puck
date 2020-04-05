@@ -1,0 +1,45 @@
+{
+	"./emoji/starwars/proficiency-triumph.png":		"sw-yellow-triumph",
+	"./emoji/starwars/proficiency-success.png":		"sw-yellow-success",
+	"./emoji/starwars/proficiency-advantage.png":	"sw-yellow-advantage",
+	"./emoji/starwars/proficiency-blank.png":		"sw-yellow-blank",
+
+	"./emoji/starwars/ability-success.png":			"sw-green-success",
+	"./emoji/starwars/ability-advantage.png":		"sw-green-advantage",
+	"./emoji/starwars/ability-blank.png":			"sw-green-blank",
+
+	"./emoji/starwars/boost-success.png":			"sw-blue-success",
+	"./emoji/starwars/boost-advantage.png":			"sw-blue-advantage",
+	"./emoji/starwars/boost-blank.png":				"sw-blue-blank",
+
+	"./emoji/starwars/challenge-despair.png":		"sw-red-despair",
+	"./emoji/starwars/challenge-failure.png":		"sw-red-failure",
+	"./emoji/starwars/challenge-threat.png":		"sw-red-threat",
+	"./emoji/starwars/challenge-blank.png":			"sw-red-blank",
+
+	"./emoji/starwars/difficulty-failure.png":		"sw-purple-failure",
+	"./emoji/starwars/difficulty-threat.png":		"sw-purple-threat",
+	"./emoji/starwars/difficulty-blank.png":		"sw-purple-blank",
+
+	"./emoji/starwars/setback-failure.png":			"sw-black-failure",
+	"./emoji/starwars/setback-threat.png":			"sw-black-threat",
+	"./emoji/starwars/setback-blank.png":			"sw-black-blank",
+
+	"./emoji/starwars/force-light.png":				"sw-white-light",
+	"./emoji/starwars/force-dark.png":				"sw-white-dark",
+	"./emoji/starwars/force-blank.png":				"sw-white-blank",
+
+	"./emoji/starwars/generic-triumph.png":			"sw-triumph",
+	"./emoji/starwars/generic-despair.png":			"sw-despair",
+	"./emoji/starwars/generic-success.png":			"sw-success",
+	"./emoji/starwars/generic-failure.png":			"sw-failure",
+	"./emoji/starwars/generic-advantage.png":		"sw-advantage",
+	"./emoji/starwars/generic-threat.png":			"sw-threat",
+	"./emoji/starwars/generic-light.png":			"sw-light",
+	"./emoji/starwars/generic-dark.png":			"sw-dark",
+	"./emoji/starwars/generic-blank.png":			"sw-blank",
+
+	"./emoji/spectaculars/boon.png":				"spec-boon",
+	"./emoji/spectaculars/drawback.png":			"spec-drawback",
+	"./emoji/spectaculars/blank.png":				"spec-blank"
+}
