@@ -23,19 +23,19 @@ class Modifier(Dice):
 		self.type = "Numeric"
 
 	def total(self):
-		return f"{int(self):+}"
+		return str(self)
 
 	def __add__(self, other):
 		if isinstance(other, Standard) or isinstance(other, self.__class__):
-			return Modifier(int(self) + int(other), self.inverted)
+			return Modifier(int(self) + int(other))
 
 		return NotImplemented
 
 	def __int__(self):
-		return -self.results[0] if self.inverted else self.results[0]
+		return self.results[0]
 
 	def __str__(self):
-		return f"{'-' if self.inverted else '+'}{self.results[0]}"
+		return f"{int(self):+}"
 
 class Standard(Dice):
 	max_explode = 100
@@ -72,7 +72,7 @@ class Standard(Dice):
 
 	def __add__(self, other):
 		if isinstance(other, Modifier):
-			return Modifier(int(self) + int(other), other.inverted)
+			return Modifier(int(self) + int(other))
 
 		elif not isinstance(other, self.__class__):
 			return NotImplemented
@@ -273,6 +273,6 @@ class OptionsConverter(cmds.Converter):
 			return Option(name)
 
 if __name__ == '__main__':
-	c = SpecChallenge(3)
-	a = SpecAdvantage(3)
-	print(c, a, (a + c).total(), sep="\n")
+	m = Modifier(12, True)
+	d = Standard(2, 6)
+	print(d, m, m+d)
