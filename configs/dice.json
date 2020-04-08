@@ -27,13 +27,13 @@
 				":spec-blank:",
 				":spec-blank:",
 				":spec-blank:"
-			],
+			]
 		},
 
 		"aliases":
 		{
-			"advantage": ["a", "adv"],
-			"challenge": ["c", "chal"]
+			"advantage": ["advantage", "a", "adv"],
+			"challenge": ["challenge", "c", "chal"]
 		},
 
 		"cancels":
@@ -41,9 +41,11 @@
 			[[":spec-boon:"], [":spec-drawback:"]]
 		],
 
-		"empty": [":spec-blank:"],
+		"blank": [":spec-blank:"],
 
-		"defaut": ":spec-blank:"
+		"defaut": ":spec-blank:",
+
+		"delimiter": "s"
 	},
 
 	"starwars":
@@ -101,7 +103,7 @@
 				":sw-red-failure:",
 				":sw-red-threat:",
 				":sw-red-threat:",
-				":sw-red-blank:",
+				":sw-red-blank:"
 			],
 
 			"difficulty":
@@ -140,18 +142,18 @@
 				":sw-white-dark:",
 				":sw-white-dark:",
 				":sw-white-dark:"
-			],
+			]
 		},
 
 		"aliases":
 		{
-			"proficiency": ["yellow", "y", "prof", "pr"],
-			"ability": ["green", "g", "abi", "abil", "a"],
-			"boost": ["blue", "b", "bst"],
-			"challenge": ["red", "r", "chal", "c"],
-			"difficulty": ["purple", "p", "diff", "dif", "d"],
-			"setback": ["black", "bk", "k", "set", "setb", "sb", "s"],
-			"force": ["white", "w", "for", "f"]
+			"proficiency": ["proficiency", "yellow", "y", "prof", "pr"],
+			"ability": ["ability", "green", "g", "abi", "abil", "a"],
+			"boost": ["boost", "blue", "b", "bst"],
+			"challenge": ["challenge", "red", "r", "chal", "c"],
+			"difficulty": ["difficulty", "purple", "p", "diff", "dif", "d"],
+			"setback": ["setback", "black", "bk", "k", "set", "setb", "sb", "s"],
+			"force": ["force", "white", "w", "for", "f"]
 		},
 
 		"cancels":
@@ -166,8 +168,37 @@
 			]
 		],
 
-		"empty": [":sw-yellow-blank:", ":sw-green-blank:", ":sw-blue-blank:", ":sw-red-blank:", ":sw-purple-blank:", ":sw-black-blank:", ":sw-generic-blank:"],
+		"blank": [":sw-yellow-blank:", ":sw-green-blank:", ":sw-blue-blank:", ":sw-red-blank:", ":sw-purple-blank:", ":sw-black-blank:", ":sw-generic-blank:"],
 
-		"defaut": ":sw-generic-blank:"
+		"defaut": ":sw-generic-blank:",
+
+		"delimiter": "sw"
+	},
+
+	"fate":
+	{
+		"faces":
+		{
+			"basic": ["+", "+", "0", "0", "-", "-"]
+		},
+
+		"aliases":
+		{
+			"basic": ["", "ate", "udge"]
+		},
+
+		"cancels":
+		[
+			[
+				["+"],
+				["-"]
+			]
+		],
+
+		"blank": ["0"],
+
+		"defaut": ["0"],
+
+		"delimiter": "f"
 	}
 }
