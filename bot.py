@@ -1,6 +1,8 @@
-from discord.ext import commands as cmds
-from cogs import Other, RPG
 import json
+
+from discord.ext import commands as cmds
+
+from cogs import Other, RPG
 
 puck = cmds.Bot(command_prefix = "!")
 puck.add_cog(Other(puck))
