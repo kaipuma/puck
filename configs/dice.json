@@ -5,28 +5,28 @@
 		{
 			"advantage":
 			[
-				":spec-boon:",
-				":spec-boon:",
-				":spec-boon:",
-				":spec-boon:",
-				":spec-blank:",
-				":spec-blank:",
-				":spec-blank:",
-				":spec-blank:"
+				":spec_boon:",
+				":spec_boon:",
+				":spec_boon:",
+				":spec_boon:",
+				":spec_blank:",
+				":spec_blank:",
+				":spec_blank:",
+				":spec_blank:"
 			],
 
 			"challenge":
 			[
-				":spec-drawback:",
-				":spec-drawback:",
-				":spec-drawback:",
-				":spec-drawback:",
-				":spec-drawback:",
-				":spec-drawback:",
-				":spec-blank:",
-				":spec-blank:",
-				":spec-blank:",
-				":spec-blank:"
+				":spec_drawback:",
+				":spec_drawback:",
+				":spec_drawback:",
+				":spec_drawback:",
+				":spec_drawback:",
+				":spec_drawback:",
+				":spec_blank:",
+				":spec_blank:",
+				":spec_blank:",
+				":spec_blank:"
 			]
 		},
 
@@ -38,12 +38,12 @@
 
 		"cancels":
 		[
-			[[":spec-boon:"], [":spec-drawback:"]]
+			[[":spec_boon:"], [":spec_drawback:"]]
 		],
 
-		"blank": [":spec-blank:"],
+		"blank": [":spec_blank:"],
 
-		"defaut": ":spec-blank:",
+		"defaut": ":spec_blank:",
 
 		"delimiter": "s"
 	},
@@ -52,125 +52,125 @@
 	{
 		"faces":
 		{
-			"proficiency":
+			":sw_yellow_blank:":
 			[
-				":sw-yellow-triumph::sw-yellow-success:",
-				":sw-yellow-success::sw-yellow-success:",
-				":sw-yellow-success::sw-yellow-success:",
-				":sw-yellow-success::sw-yellow-advantage:",
-				":sw-yellow-success::sw-yellow-advantage:",
-				":sw-yellow-success::sw-yellow-advantage:",
-				":sw-yellow-advantage::sw-yellow-advantage:",
-				":sw-yellow-advantage::sw-yellow-advantage:",
-				":sw-yellow-success:",
-				":sw-yellow-success:",
-				":sw-yellow-advantage:",
-				":sw-yellow-blank:"
+				[":sw_yellow_triumph:", ":sw_yellow_success:"],
+				[":sw_yellow_success:", ":sw_yellow_success:"],
+				[":sw_yellow_success:", ":sw_yellow_success:"],
+				[":sw_yellow_success:", ":sw_yellow_advantage:"],
+				[":sw_yellow_success:", ":sw_yellow_advantage:"],
+				[":sw_yellow_success:", ":sw_yellow_advantage:"],
+				[":sw_yellow_advantage:", ":sw_yellow_advantage:"],
+				[":sw_yellow_advantage:", ":sw_yellow_advantage:"],
+				":sw_yellow_success:",
+				":sw_yellow_success:",
+				":sw_yellow_advantage:",
+				":sw_yellow_blank:"
 			],
 
-			"ability":
+			":sw_green_blank:":
 			[
-				":sw-green-success::sw-green-success:",
-				":sw-green-success::sw-green-advantage:",
-				":sw-green-advantage::sw-green-advantage:",
-				":sw-green-success:",
-				":sw-green-success:",
-				":sw-green-advantage:",
-				":sw-green-advantage:",
-				":sw-green-blank:"
+				[":sw_green_success:", ":sw_green_success:"],
+				[":sw_green_success:", ":sw_green_advantage:"],
+				[":sw_green_advantage:", ":sw_green_advantage:"],
+				":sw_green_success:",
+				":sw_green_success:",
+				":sw_green_advantage:",
+				":sw_green_advantage:",
+				":sw_green_blank:"
 			],
 
-			"boost":
+			":sw_blue_blank:":
 			[
-				":sw-blue-success::sw-blue-advantage:",
-				":sw-blue-advantage::sw-blue-advantage:",
-				":sw-blue-success:",
-				":sw-blue-advantage:",
-				":sw-blue-blank:",
-				":sw-blue-blank:"
+				[":sw_blue_success:", ":sw_blue_advantage:"],
+				[":sw_blue_advantage:", ":sw_blue_advantage:"],
+				":sw_blue_success:",
+				":sw_blue_advantage:",
+				":sw_blue_blank:",
+				":sw_blue_blank:"
 			],
 
-			"challenge":
+			":sw_red_blank:":
 			[
-				":sw-red-despair::sw-red-failure:",
-				":sw-red-failure::sw-red-failure:",
-				":sw-red-failure::sw-red-failure:",
-				":sw-red-failure::sw-red-threat:",
-				":sw-red-failure::sw-red-threat:",
-				":sw-red-threat::sw-red-threat:",
-				":sw-red-threat::sw-red-threat:",
-				":sw-red-failure:",
-				":sw-red-failure:",
-				":sw-red-threat:",
-				":sw-red-threat:",
-				":sw-red-blank:"
+				[":sw_red_despair:", ":sw_red_failure:"],
+				[":sw_red_failure:", ":sw_red_failure:"],
+				[":sw_red_failure:", ":sw_red_failure:"],
+				[":sw_red_failure:", ":sw_red_threat:"],
+				[":sw_red_failure:", ":sw_red_threat:"],
+				[":sw_red_threat:", ":sw_red_threat:"],
+				[":sw_red_threat:", ":sw_red_threat:"],
+				":sw_red_failure:",
+				":sw_red_failure:",
+				":sw_red_threat:",
+				":sw_red_threat:",
+				":sw_red_blank:"
 			],
 
-			"difficulty":
+			":sw_purple_blank:":
 			[
-				":sw-purple-failure::sw-purple-failure:",
-				":sw-purple-failure::sw-purple-threat:",
-				":sw-purple-threat::sw-purple-threat:",
-				":sw-purple-failure:",
-				":sw-purple-threat:",
-				":sw-purple-threat:",
-				":sw-purple-threat:",
-				":sw-purple-blank:"
+				[":sw_purple_failure:", ":sw_purple_failure:"],
+				[":sw_purple_failure:", ":sw_purple_threat:"],
+				[":sw_purple_threat:", ":sw_purple_threat:"],
+				":sw_purple_failure:",
+				":sw_purple_threat:",
+				":sw_purple_threat:",
+				":sw_purple_threat:",
+				":sw_purple_blank:"
 			],
 
-			"setback":
+			":sw_black_blank:":
 			[
-				":sw-black-failure:",
-				":sw-black-failure:",
-				":sw-black-threat:",
-				":sw-black-threat:",
-				":sw-black-blank:",
-				":sw-black-blank:"
+				":sw_black_failure:",
+				":sw_black_failure:",
+				":sw_black_threat:",
+				":sw_black_threat:",
+				":sw_black_blank:",
+				":sw_black_blank:"
 			],
 
-			"force":
+			"sw_white_blank":
 			[
-				":sw-white-light::sw-white-light:",
-				":sw-white-light::sw-white-light:",
-				":sw-white-light::sw-white-light:",
-				":sw-white-light:",
-				":sw-white-light:",
-				":sw-white-dark::sw-white-dark:",
-				":sw-white-dark:",
-				":sw-white-dark:",
-				":sw-white-dark:",
-				":sw-white-dark:",
-				":sw-white-dark:",
-				":sw-white-dark:"
+				[":sw_white_light:", ":sw_white_light:"],
+				[":sw_white_light:", ":sw_white_light:"],
+				[":sw_white_light:", ":sw_white_light:"],
+				":sw_white_light:",
+				":sw_white_light:",
+				[":sw_white_dark:", ":sw_white_dark:"],
+				":sw_white_dark:",
+				":sw_white_dark:",
+				":sw_white_dark:",
+				":sw_white_dark:",
+				":sw_white_dark:",
+				":sw_white_dark:"
 			]
 		},
 
 		"aliases":
 		{
-			"proficiency": ["proficiency", "yellow", "y", "prof", "pr"],
-			"ability": ["ability", "green", "g", "abi", "abil", "a"],
-			"boost": ["boost", "blue", "b", "bst"],
-			"challenge": ["challenge", "red", "r", "chal", "c"],
-			"difficulty": ["difficulty", "purple", "p", "diff", "dif", "d"],
-			"setback": ["setback", "black", "bk", "k", "set", "setb", "sb", "s"],
-			"force": ["force", "white", "w", "for", "f"]
+			":sw_yellow_blank:": ["proficiency", "yellow", "y", "prof", "pr"],
+			":sw_green_blank:": ["ability", "green", "g", "abi", "abil", "a"],
+			":sw_blue_blank:": ["boost", "blue", "b", "bst"],
+			":sw_red_blank:": ["challenge", "red", "r", "chal", "c"],
+			":sw_purple_blank:": ["difficulty", "purple", "p", "diff", "dif", "d"],
+			":sw_black_blank:": ["setback", "black", "bk", "k", "set", "setb", "sb", "s"],
+			"sw_white_blank": ["force", "white", "w", "for", "f"]
 		},
 
 		"cancels":
 		[
 			[
-				[":sw-yellow-success:", ":sw-green-success:", ":sw-blue-success:", ":sw-generic-success:"],
-				[":sw-red-failure:", ":sw-purple-failure:", ":sw-black-failure:", ":sw-generic-failure:"]
+				[":sw_yellow_success:", ":sw_green_success:", ":sw_blue_success:", ":sw_generic_success:"],
+				[":sw_red_failure:", ":sw_purple_failure:", ":sw_black_failure:", ":sw_generic_failure:"]
 			],
 			[
-				[":sw-yellow-advantage:", ":sw-green-advantage:", ":sw-blue-advantage:", ":sw-generic-advantage"],
-				[":sw-red-threat:", ":sw-purple-threat:", ":sw-black-threat:", "sw-generic-threat"]
+				[":sw_yellow_advantage:", ":sw_green_advantage:", ":sw_blue_advantage:", ":sw_generic_advantage"],
+				[":sw_red_threat:", ":sw_purple_threat:", ":sw_black_threat:", "sw_generic_threat"]
 			]
 		],
 
-		"blank": [":sw-yellow-blank:", ":sw-green-blank:", ":sw-blue-blank:", ":sw-red-blank:", ":sw-purple-blank:", ":sw-black-blank:", ":sw-generic-blank:"],
+		"blank": [":sw_yellow_blank:", ":sw_green_blank:", ":sw_blue_blank:", ":sw_red_blank:", ":sw_purple_blank:", ":sw_black_blank:", ":sw_generic_blank:"],
 
-		"defaut": ":sw-generic-blank:",
+		"defaut": ":sw_generic_blank:",
 
 		"delimiter": "sw"
 	},
