@@ -13,14 +13,22 @@ class _Reader:
 		self._mtime = 0
 		self._data = None
 
-	def __getitem__(self, item):
+	def _refresh(self):
 		mtime = os.path.getmtime(self._path)
 		if mtime > self._mtime:
 			self._mtime = mtime
 			with open(self._path, "r") as file:
 				self._data = json.load(file)
 
+	def __getitem__(self, item):
+		self._refresh()
 		return self._data[item]
+		
+	def __getattr__(self, attr):
+		self._refresh()
+		return getattr(self._data, attr)
+
+
 
 dice_config = _Reader(_paths["dice"])
 emoji_config = _Reader(_paths["emoji"])
