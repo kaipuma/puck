@@ -9,14 +9,11 @@ from discord import Embed, Color
 from .modules import RollConverter, BasicEntry, NumberEntry, SignEntry, TagEntry, SpecialEntry
 
 class RPG(cmds.Cog):
-	# compile the regex for discord emoji
-	emoji_exp = re.compile(r":(\w+?):")
-
 	def __init__(self, bot):
 		self.bot = bot
 
 	def _parse_emoji(self, ctx, text):
-		for name in set(self.emoji_exp.findall(text)):
+		for name in set(re.findall(r":(\w+?):", text)):
 			emoji = utils.get(ctx.guild.emojis, name=name)
 			if emoji is None: continue
 			text = text.replace(f":{name}:", str(emoji))
