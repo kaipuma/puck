@@ -3,7 +3,7 @@
 	{
 		"faces":
 		{
-			"advantage":
+			":spec_advantage:":
 			[
 				":spec_boon:",
 				":spec_boon:",
@@ -15,7 +15,7 @@
 				":spec_blank:"
 			],
 
-			"challenge":
+			"spec_challenge":
 			[
 				":spec_drawback:",
 				":spec_drawback:",
@@ -32,8 +32,8 @@
 
 		"aliases":
 		{
-			"advantage": ["advantage", "a", "adv"],
-			"challenge": ["challenge", "c", "chal"]
+			":spec_advantage:": ["advantage", "a", "adv"],
+			"spec_challenge": ["challenge", "c", "chal"]
 		},
 
 		"cancels":

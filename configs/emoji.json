@@ -41,5 +41,7 @@
 
 	"./emoji/spectaculars/boon.png":				"spec_boon",
 	"./emoji/spectaculars/drawback.png":			"spec_drawback",
-	"./emoji/spectaculars/blank.png":				"spec_blank"
+	"./emoji/spectaculars/blank.png":				"spec_blank",
+	"./emoji/spectaculars/advantage.png":			"spec_advantage",
+	"./emoji/spectaculars/challenge.png":			"spec_challenge"
 }
