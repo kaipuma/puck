@@ -1,5 +1,6 @@
 from functools import total_ordering
-from random import randint, shuffle
+from random import randint, shuffle, choices
+from typing import Union, List
 import re
 
 from discord.ext import commands as cmds
@@ -11,7 +12,7 @@ class DiceError(cmds.CommandError): pass
 
 @total_ordering
 class BasicDie:
-	"""A data container for a single numeric die"""
+	"""A data container for a single numeric die roll"""
 	__slots__ = ["value", "valid", "explosion"]
 
 	def __init__(self, value: int, explosion: int = 0, valid: bool = True):
@@ -25,14 +26,25 @@ class BasicDie:
 	__eq__ = lambda s, o: s.value == int(o) if hasattr(o, "__int__") else NotImplemented
 	__le__ = lambda s, o: s.value <= int(o) if hasattr(o, "__int__") else NotImplemented
 
+class SpecialDie:
+	"""A data container for a single special die roll"""
+	__slots__ = ["symbols"]
+
+	def __init__(self, result: Union[str, List[str]]):
+		if isinstance(result, str):
+			self.symbols = [result]
+		else:
+			self.symbols = list(result)
+
+	__str__ = lambda s: "".join(s.symbols)
+
 class RollEntry:
 	"""
 	A base class for all variety of entries to the "roll" command.
 	All subclasses of this will have a "_regex", which an argument will be checked against on __init__.
-	If it fails, "NoMatchError" will be raised. Otherwise, its groups are stored in "_groups".
-	All subclasses must define "invoke", "result", and "total". These return two strings and an int, respectively.
-	"invoke" and "result" represent the incoming argument and the generated results respectively. 
-	"total" represents the numeric representation of the sum of the results, if applicable.
+	If it fails, "NoMatchError" will be raised. Otherwise, its groups are stored in "_groups". Subclasses
+	must define "invoke", "result". These represent the incoming argument and the generated results 
+	respectively. "total" represents the numeric representation of the sum of the results, if applicable.
 	"""
 	__slots__ = ["invoke", "result", "total", "_groups"]
 	_regex = re.compile(r"^$")
@@ -45,6 +57,11 @@ class RollEntry:
 
 	def match(self, arg: str):
 		return self._regex.match(arg)
+
+class TagEntry(RollEntry):
+	"""A simple RollEntry that accepts any value, for adding tags to rolls"""
+	_regex = re.compile(r"^(.*)$", flags=re.S)
+	__str__ = lambda s: s._groups[0]
 
 class SignEntry(RollEntry):
 	"""
@@ -241,15 +258,45 @@ class BasicEntry(RollEntry):
 			self.invoke = "-" + self.invoke
 		self.validate()
 
-class TagEntry(RollEntry):
-	"""A simple RollEntry that accepts any value, for adding tags to rolls"""
-	_regex = re.compile(r"^(.*)$", flags=re.S)
-	__str__ = lambda s: s._groups[0]
+class SpecialEntry(RollEntry):
+	"""An entry for special dice, as defined in the dice.json config file"""
+	__slots__ = ["category", "die", "_values"]
+	def __init__(self, arg: str):
+		# this subclass will overwrite the base class's __init__ entirely
+		# since there's more than one possible regex to match against
+
+		# create then check the regexes based on the config data
+		for name, data in dcon.items():
+			aliases = sum(data["aliases"].values(), [])
+			aliases = sorted(aliases, key=lambda a: len(a), reverse=True)
+			regex_string = fr"(\d*){data['delimiter']}({'|'.join(aliases)})"
+			match = re.match(regex_string, arg, flags=re.I)
+			if match is not None:
+				self._groups = match.groups()
+				self.category = name
+				break
+		else:
+			# if no regex matched, raise the appropriate error, like in the base
+			raise NoMatchError(f"\"{arg}\" doesn't match any special die regex.")
+
+		# collect some variables and values
+		pool = int(self._groups[0] or 1)
+		alias = self._groups[1]
+		for name, aliases in dcon[self.category]["aliases"].items():
+			if alias in aliases:
+				self.die = name
+				break
+		faces = dcon[self.category]["faces"][self.die]
+		self._values = list(map(SpecialDie, choices(faces, k=pool)))
+
+		# define the invoke and results strings
+		self.invoke = f"{pool}{dcon[self.category]['delimiter']}{self.die}"
+		self.result = ", ".join(map(str, self._values))
 
 class RollConverter(cmds.Converter):
 	async def convert(self, ctx, arg: str):
 		# this order matters, since TagEntry is a catchall
-		for cls in (BasicEntry, NumberEntry, SignEntry, TagEntry):
+		for cls in (BasicEntry, NumberEntry, SpecialEntry, SignEntry, TagEntry):
 			try:
 				return cls(arg)
 			except NoMatchError:
