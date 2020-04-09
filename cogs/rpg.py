@@ -58,7 +58,7 @@ class RPG(cmds.Cog):
 		# create the embed and add the lists
 		ebd = Embed(
 			color = Color.from_rgb(0, 0, 255),
-			title = title
+			title = self._parse_emoji(ctx, title),
 		).add_field(
 			name = f"Result{'' if len(entries) == 1 else 's'}:",
 			value = self._parse_emoji(ctx, results),
