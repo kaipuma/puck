@@ -128,7 +128,7 @@
 				":sw_black_blank:"
 			],
 
-			"sw_white_blank":
+			":sw_white_blank:":
 			[
 				[":sw_white_light:", ":sw_white_light:"],
 				[":sw_white_light:", ":sw_white_light:"],
@@ -153,7 +153,7 @@
 			":sw_red_blank:": ["challenge", "red", "r", "chal", "c"],
 			":sw_purple_blank:": ["difficulty", "purple", "p", "diff", "dif", "d"],
 			":sw_black_blank:": ["setback", "black", "bk", "k", "set", "setb", "sb", "s"],
-			"sw_white_blank": ["force", "white", "w", "for", "f"]
+			":sw_white_blank:": ["force", "white", "w", "for", "f"]
 		},
 
 		"reduce":
@@ -183,12 +183,12 @@
 	{
 		"faces":
 		{
-			"basic": ["+", "+", "0", "0", "-", "-"]
+			"ate": ["+", "+", "0", "0", "-", "-"]
 		},
 
 		"aliases":
 		{
-			"basic": ["", "ate", "udge"]
+			"ate": ["", "ate", "udge"]
 		},
 
 		"cancels":
