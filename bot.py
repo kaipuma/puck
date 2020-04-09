@@ -35,9 +35,6 @@ async def on_ready():
 	print("Done updating emoji")
 
 if __name__ == '__main__':
-	with open("configs/data.json", "r") as file:
-		puck.data = json.load(file)
-
 	with open("configs/token.txt", "r") as file:
 		token = file.readline()
 		
