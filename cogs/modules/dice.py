@@ -1,5 +1,5 @@
 from functools import total_ordering
-from random import randint, shuffle, choices
+from random import randint, shuffle, choice
 from typing import Union, List
 import re
 
@@ -28,15 +28,90 @@ class BasicDie:
 
 class SpecialDie:
 	"""A data container for a single special die roll"""
-	__slots__ = ["symbols"]
+	__slots__ = ["symbols", "category", "total"]
 
-	def __init__(self, result: Union[str, List[str]]):
+	def __init__(self, category: str, result: Union[str, List[str]]):
+		self.category = category
 		if isinstance(result, str):
 			self.symbols = [result]
 		else:
 			self.symbols = list(result)
 
+		# count how many of each symbol is here
+		# (more than three of any one will display as "SxN"
+		# where S is the symbol and N is how many there are)
+		counts = dict()
+		for symb in self.symbols:
+			if symb not in counts:
+				counts[symb] = 0
+			counts[symb] += 1
+
+		# add any non-blank value to the "total" string
+		# any occuring more than 3x is depicted once w/ that number
+		self.total = ""
+		blanks = dcon[category]["blank"]
+		for symb in sorted(self.symbols):
+			if symb not in blanks:
+				if counts[symb] > 0:
+					self.total += symb
+				if counts[symb] > 3:
+					self.total += f"x{counts[symb]}"
+					counts[symb] = 0
+
+		# default the total to the default value in the config
+		if not self.total:
+			self.total = dcon[category]["default"]
+
 	__str__ = lambda s: "".join(s.symbols)
+
+	def __add__(self, other):
+		# can only cancel with other dice in the same category
+		if not isinstance(other, self.__class__) \
+		or other.category != self.category:
+			return NotImplemented
+
+		# collect all the symbols from both sides
+		all_symb = self.symbols + other.symbols
+
+		# reduce each symbol if applicable
+		if "reduce" in dcon[self.category]:
+			for i in range(len(all_symb)):
+				for base, lst in dcon[self.category]["reduce"].items():
+					if all_symb[i] in lst:
+						all_symb[i] = base
+
+		# the cancelation categories. anything in any list in each of these
+		# will cancel with anything else in that list
+		can_cats = dcon[self.category]["cancels"]
+
+		# a place to count the symbols while working
+		working = [{name:0 for name in cat} for cat in can_cats]
+
+		# go through the symbols, finding which category they each belong to
+		# if there's already another symbol in that category with a positive 
+		# count, decrement it. otherwise, increment that symbol's count
+		no_cat = []
+		for symbol in all_symb:
+			for i, cat in enumerate(can_cats):
+				if symbol not in cat: continue
+				for k, v in working[i].items():
+					if v > 0 and k != symbol:
+						working[i][k] -= 1
+						break
+				else:
+					working[i][symbol] += 1
+				break
+			else:
+				no_cat.append(symbol)
+
+		# merge all remaining items
+		result = no_cat
+		for w in working:
+			for k, v in w.items():
+				result += [k]*v
+
+		# return a new SpecialDie object with the canceled list
+		return self.__class__(self.category, result)
 
 class RollEntry:
 	"""
@@ -279,7 +354,7 @@ class SpecialEntry(RollEntry):
 			# if no regex matched, raise the appropriate error, like in the base
 			raise NoMatchError(f"\"{arg}\" doesn't match any special die regex.")
 
-		# collect some variables and values
+		# collect some variables
 		pool = int(self._groups[0] or 1)
 		alias = self._groups[1]
 		for name, aliases in dcon[self.category]["aliases"].items():
@@ -287,11 +362,24 @@ class SpecialEntry(RollEntry):
 				self.die = name
 				break
 		faces = dcon[self.category]["faces"][self.die]
-		self._values = list(map(SpecialDie, choices(faces, k=pool)))
 
+		# roll dice
+		self._values = []
+		for _ in range(pool):
+			self._values.append(SpecialDie(self.category, choice(faces)))
 		# define the invoke and results strings
 		self.invoke = f"{pool}{dcon[self.category]['delimiter']}{self.die}"
 		self.result = ", ".join(map(str, self._values))
+
+	@property
+	def total(self):
+		if not self._values:
+			return SpecialDie(self.category, dcon[self.category]["default"])
+		result = self._values[0]
+		for v in self._values[1:]:
+			result += v
+
+		return result
 
 class RollConverter(cmds.Converter):
 	async def convert(self, ctx, arg: str):

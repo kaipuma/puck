@@ -38,7 +38,7 @@
 
 		"cancels":
 		[
-			[[":spec_boon:"], [":spec_drawback:"]]
+			[":spec_boon:", ":spec_drawback:"]
 		],
 
 		"blank": [":spec_blank:"],
@@ -156,21 +156,25 @@
 			"sw_white_blank": ["force", "white", "w", "for", "f"]
 		},
 
+		"reduce":
+		{
+			":sw_success:": [":sw_yellow_success:", ":sw_green_success:", ":sw_blue_success:"],
+			":sw_failure:": [":sw_red_failure:", ":sw_purple_failure:", ":sw_black_failure:"],
+			":sw_advantage:": [":sw_yellow_advantage:", ":sw_green_advantage:", ":sw_blue_advantage:"],
+			":sw_threat:": [":sw_red_threat:", ":sw_purple_threat:", ":sw_black_threat:"],
+			":sw_triumph:": [":sw_yellow_triumph:"],
+			":sw_despair:": [":sw_red_despair:"]
+		},
+
 		"cancels":
 		[
-			[
-				[":sw_yellow_success:", ":sw_green_success:", ":sw_blue_success:", ":sw_generic_success:"],
-				[":sw_red_failure:", ":sw_purple_failure:", ":sw_black_failure:", ":sw_generic_failure:"]
-			],
-			[
-				[":sw_yellow_advantage:", ":sw_green_advantage:", ":sw_blue_advantage:", ":sw_generic_advantage"],
-				[":sw_red_threat:", ":sw_purple_threat:", ":sw_black_threat:", "sw_generic_threat"]
-			]
+			[":sw_success:", ":sw_failure:"],
+			[":sw_advantage:", ":sw_threat:"]
 		],
 
-		"blank": [":sw_yellow_blank:", ":sw_green_blank:", ":sw_blue_blank:", ":sw_red_blank:", ":sw_purple_blank:", ":sw_black_blank:", ":sw_generic_blank:"],
+		"blank": [":sw_yellow_blank:", ":sw_green_blank:", ":sw_blue_blank:", ":sw_red_blank:", ":sw_purple_blank:", ":sw_black_blank:", ":sw_blank:"],
 
-		"default": ":sw_generic_blank:",
+		"default": ":sw_blank:",
 
 		"delimiter": "sw"
 	},
@@ -189,10 +193,7 @@
 
 		"cancels":
 		[
-			[
-				["+"],
-				["-"]
-			]
+			["+", "-"]
 		],
 
 		"blank": ["0"],

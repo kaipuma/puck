@@ -6,7 +6,7 @@ from discord.ext import commands as cmds
 import discord.utils as utils
 from discord import Embed, Color
 
-from .modules import RollConverter, BasicEntry, NumberEntry, SignEntry, TagEntry
+from .modules import RollConverter, BasicEntry, NumberEntry, SignEntry, TagEntry, SpecialEntry
 
 class RPG(cmds.Cog):
 	# compile the regex for discord emoji
@@ -26,7 +26,7 @@ class RPG(cmds.Cog):
 	async def roll(self, ctx, entries: cmds.Greedy[RollConverter]):
 		# first, loop over all the entries, inverting any that 
 		# come after a bare "-", and categorizing them all
-		categorized = {"numeric":[], "tags":[]}
+		categorized = {"numeric":[], "tags":[], "special":{}}
 		invert_next = False
 		for entry in entries:
 			if isinstance(entry, BasicEntry) or isinstance(entry, NumberEntry):
@@ -37,6 +37,11 @@ class RPG(cmds.Cog):
 
 			elif isinstance(entry, TagEntry):
 				categorized["tags"].append(entry)
+
+			elif isinstance(entry, SpecialEntry):
+				if entry.category not in categorized["special"]:
+					categorized["special"][entry.category] = []
+				categorized["special"][entry.category].append(entry)
 
 			elif isinstance(entry, SignEntry) and entry.sign == -1:
 				invert_next = not invert_next
@@ -52,8 +57,15 @@ class RPG(cmds.Cog):
 		# gather the results list (ignoring tags and signs), and the totals list
 		results = []
 		results = "\n".join(f"{e.invoke}: {e.result}" for e in entries if e.__class__ not in excl)
-		totals = dict()
-		totals["numeric"] = sum(e.total for e in categorized["numeric"])
+		totals = []
+		if categorized["numeric"]:
+			totals.append(sum(e.total for e in categorized["numeric"]))
+		if categorized["special"]:
+			for value in categorized["special"].values():
+				subtotal = value[0].total
+				for v in value[1:]:
+					subtotal += v.total
+				totals.append(subtotal.total)
 
 		# create the embed and add the lists
 		ebd = Embed(
@@ -65,7 +77,7 @@ class RPG(cmds.Cog):
 			inline = False
 		).add_field(
 			name = f"Total{'' if len(totals) == 1 else 's'}:",
-			value = self._parse_emoji(ctx, ", ".join(map(str, totals.values()))),
+			value = self._parse_emoji(ctx, ", ".join(map(str, totals) or "0")),
 			inline = False
 		)
 

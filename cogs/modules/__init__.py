@@ -1,1 +1,1 @@
-from .dice import RollConverter, BasicEntry, NumberEntry, SignEntry, TagEntry
+from .dice import RollConverter, BasicEntry, NumberEntry, SignEntry, TagEntry, SpecialEntry
