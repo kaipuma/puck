@@ -43,7 +43,7 @@
 
 		"blank": [":spec_blank:"],
 
-		"defaut": ":spec_blank:",
+		"default": ":spec_blank:",
 
 		"delimiter": "s"
 	},
@@ -170,7 +170,7 @@
 
 		"blank": [":sw_yellow_blank:", ":sw_green_blank:", ":sw_blue_blank:", ":sw_red_blank:", ":sw_purple_blank:", ":sw_black_blank:", ":sw_generic_blank:"],
 
-		"defaut": ":sw_generic_blank:",
+		"default": ":sw_generic_blank:",
 
 		"delimiter": "sw"
 	},
@@ -197,7 +197,7 @@
 
 		"blank": ["0"],
 
-		"defaut": ["0"],
+		"default": ["0"],
 
 		"delimiter": "f"
 	}
