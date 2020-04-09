@@ -5,8 +5,8 @@ from discord.ext import commands as cmds
 from cogs import Other, RPG
 
 puck = cmds.Bot(command_prefix = "!")
-puck.add_cog(Other(puck))
-puck.add_cog(RPG(puck))
+puck.add_cog(Other())
+puck.add_cog(RPG())
 puck.help_command.cog = puck.cogs["Other"]
 
 @puck.command(aliases=["stop", "exit"], hidden=True)

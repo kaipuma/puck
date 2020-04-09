@@ -2,9 +2,6 @@ from discord.ext import commands as cmds
 import json
 
 class Other(cmds.Cog):
-	def __init__(self, bot):
-		self.bot = bot
-
 	@cmds.group(name="set", brief="set various variables")
 	async def cmd_set(self, ctx):
 		"""
