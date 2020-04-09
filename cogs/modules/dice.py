@@ -41,7 +41,8 @@ class SpecialDie:
 		# (more than three of any one will display as "SxN"
 		# where S is the symbol and N is how many there are)
 		counts = dict()
-		for symb in self.symbols:
+		reduced = self.reduce(self.symbols)
+		for symb in reduced:
 			if symb not in counts:
 				counts[symb] = 0
 			counts[symb] += 1
@@ -50,7 +51,7 @@ class SpecialDie:
 		# any occuring more than 3x is depicted once w/ that number
 		self.total = ""
 		blanks = dcon[category]["blank"]
-		for symb in sorted(self.symbols):
+		for symb in reduced:
 			if symb not in blanks:
 				if counts[symb] > 0:
 					self.total += symb
@@ -62,6 +63,17 @@ class SpecialDie:
 		if not self.total:
 			self.total = dcon[category]["default"]
 
+	def reduce(self, symbols):
+		"""Reduce a list of symbols based on this category's configs"""
+		symbols = symbols[:]
+		if "reduce" in dcon[self.category]:
+			for i in range(len(symbols)):
+				for base, lst in dcon[self.category]["reduce"].items():
+					if symbols[i] in lst:
+						symbols[i] = base
+		return symbols
+
+
 	__str__ = lambda s: "".join(s.symbols)
 
 	def __add__(self, other):
@@ -71,14 +83,7 @@ class SpecialDie:
 			return NotImplemented
 
 		# collect all the symbols from both sides
-		all_symb = self.symbols + other.symbols
-
-		# reduce each symbol if applicable
-		if "reduce" in dcon[self.category]:
-			for i in range(len(all_symb)):
-				for base, lst in dcon[self.category]["reduce"].items():
-					if all_symb[i] in lst:
-						all_symb[i] = base
+		all_symb = self.reduce(self.symbols + other.symbols)
 
 		# the cancelation categories. anything in any list in each of these
 		# will cancel with anything else in that list
