@@ -349,7 +349,7 @@ class SpecialEntry(RollEntry):
 		for name, data in dcon.items():
 			aliases = sum(data["aliases"].values(), [])
 			aliases = sorted(aliases, key=lambda a: len(a), reverse=True)
-			regex_string = fr"(\d*){data['delimiter']}({'|'.join(aliases)})"
+			regex_string = fr"^(\d*){data['delimiter']}({'|'.join(aliases)})$"
 			match = re.match(regex_string, arg, flags=re.I)
 			if match is not None:
 				self._groups = match.groups()
