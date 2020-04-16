@@ -1,4 +1,6 @@
 import json
+from asyncio import Lock
+import shelve
 
 from discord.ext import commands as cmds
 
@@ -33,6 +35,14 @@ async def on_ready():
 				except BaseException as e:
 					print(e)
 	print("Done updating emoji")
+
+	puck.locks = {
+		"timers": Lock()
+	}
+
+	with shelve.open("data/timers.shelf") as shelf:
+		for k in list(shelf.keys()):
+			del shelf[k]
 
 if __name__ == '__main__':
 	with open("configs/token.txt", "r") as file:
