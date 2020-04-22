@@ -7,7 +7,7 @@ from discord.ext import commands as cmds
 import discord.utils as utils
 from discord import Embed, Color
 
-from .modules import RollConverter, BasicEntry, NumberEntry, SignEntry, TagEntry, SpecialEntry
+from .modules.dice import RollConverter, BasicEntry, NumberEntry, SignEntry, TagEntry, SpecialEntry
 from .modules.configs import color_config as colcon
 
 class RPG(cmds.Cog):

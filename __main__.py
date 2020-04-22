@@ -1,10 +1,12 @@
-import json
 from asyncio import Lock
+import json
+import os
 import shelve
 
 from discord.ext import commands as cmds
 
-from cogs import Other, RPG
+from cogs.rpg import RPG
+from cogs.other import Other
 
 puck = cmds.Bot(command_prefix = "!")
 puck.add_cog(Other())
@@ -18,9 +20,11 @@ async def quit(ctx):
 
 @puck.event
 async def on_ready():
+	# read the emoji config
 	with open("./configs/emoji.json", "r") as file:
 		emojis = json.load(file)
 
+	# upload any required emoji not already existing
 	for guild in puck.guilds:
 		for path, name in emojis.items():
 			if any(e.name == name for e in guild.emojis): continue
@@ -36,16 +40,26 @@ async def on_ready():
 					print(e)
 	print("Done updating emoji")
 
+	# create all the locks for accessing the data files
 	puck.locks = {
 		"timers": Lock()
 	}
 
-	with shelve.open("data/timers.shelf") as shelf:
-		for k in list(shelf.keys()):
-			del shelf[k]
+	# clear the timers data file on reboot
+	async with puck.locks["timers"]:
+		with shelve.open("data/timers.shelf") as shelf:
+			for k in list(shelf.keys()):
+				del shelf[k]
 
-if __name__ == '__main__':
+# change the working directory to the bot root directory
+os.chdir(os.path.dirname(__file__))
+# get the token from the config file
+try:
 	with open("configs/token.txt", "r") as file:
 		token = file.readline()
-		
+# if no token has been set, tell the user
+except:
+	print("Please create the file \"configs/token.txt\", and place the bot token within it.")
+# if the token is gathered successfully, run the bot
+else:
 	puck.run(token)

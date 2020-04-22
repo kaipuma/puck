@@ -1,9 +1,10 @@
 import json
 from typing import Optional
+import re
 
 from discord.ext import commands as cmds
 
-from .modules import TimerConverter, Timer
+from .modules.misc import TimerConverter, Timer
 
 class Other(cmds.Cog):
 	@cmds.group(aliases=["time"], brief="start a timer", invoke_without_command=True)
