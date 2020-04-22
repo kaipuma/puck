@@ -22,11 +22,11 @@ class RPG(cmds.Cog):
 		if cardtype == "x":
 			title = "Someone has tapped the X card!"
 			desc = "Please cease the current topic of conversation."
-			color = Color.from_rgb(255, 0, 0)
+			color = Color.from_rgb(*colcon["xcard"])
 		elif cardtype == "o":
 			title = "Someone has tapped the O card!"
 			desc = "Keep up the good work!"
-			color = Color.from_rgb(0, 255, 0)
+			color = Color.from_rgb(*colcon["ocard"])
 
 		if tag:
 			desc = f"They specifically mentioned \"{tag}\"\n{desc}"

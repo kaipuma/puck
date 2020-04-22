@@ -7,6 +7,7 @@ from discord.ext import commands as cmds
 from discord import Embed, Color
 
 from .modules.misc import TimerConverter, Timer
+from .modules.configs import color_config as colcon
 
 class Other(cmds.Cog):
 	@cmds.group(aliases=["time"], brief="start a timer", invoke_without_command=True)
@@ -82,7 +83,7 @@ class Other(cmds.Cog):
 
 		shuffle(final)
 		ebd = Embed(
-			color = Color.from_rgb(0, 0, 255),
+			color = Color.from_rgb(*colcon["shuffle"]),
 			title = "Your shuffled list is:",
 			description = "\n".join(final)
 		)
