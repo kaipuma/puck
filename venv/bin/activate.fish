@@ -29,7 +29,7 @@ end
 # unset irrelevant variables
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV "/home/peridexis/Documents/workplace/discord/bots/puck/venv"
+set -gx VIRTUAL_ENV "/home/kai/workspace/bots/puck/venv"
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/bin" $PATH
