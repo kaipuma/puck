@@ -185,12 +185,12 @@
 	{
 		"faces":
 		{
-			"ate": ["+", "+", "0", "0", "-", "-"]
+			" fate": ["+", "+", "0", "0", "-", "-"]
 		},
 
 		"aliases":
 		{
-			"ate": ["", "ate", "udge"]
+			" fate": ["ate", "", "udge"]
 		},
 
 		"cancels":
@@ -200,7 +200,7 @@
 
 		"blank": ["0"],
 
-		"default": ["0"],
+		"default": "0",
 
 		"delimiter": "f"
 	}
