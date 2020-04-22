@@ -8,6 +8,7 @@ import discord.utils as utils
 from discord import Embed, Color
 
 from .modules import RollConverter, BasicEntry, NumberEntry, SignEntry, TagEntry, SpecialEntry
+from .modules.configs import color_config as colcon
 
 class RPG(cmds.Cog):
 	def _parse_emoji(self, ctx, text):
@@ -103,7 +104,7 @@ class RPG(cmds.Cog):
 
 		# create the embed and add the lists
 		ebd = Embed(
-			color = Color.from_rgb(0, 0, 255),
+			color = Color.from_rgb(*colcon["roll"]),
 			title = self._parse_emoji(ctx, title),
 		).add_field(
 			name = f"Result{'' if len(entries) == 1 else 's'}:",
@@ -157,9 +158,9 @@ class RPG(cmds.Cog):
 		final = []
 		for c in choices:
 			# split all in the form thingXnum 
-			base, mult = re.match(r"(.*?)(?:[xX](?=(?!0))(\d+))?$", c).groups()
+			base, mult = re.match(r"(.*?)(?:x(\d+)?$", c, flags=re.I).groups()
 			# int(mult), or 1 if mult is None
-			mult = mult and int(mult) or 1
+			mult = int(mult or 1)
 			for _ in range(mult):
 				final.append(base)
 
