@@ -1,5 +1,4 @@
 from typing import Optional, Union
-from random import shuffle
 import json
 import re
 
@@ -138,37 +137,3 @@ class RPG(cmds.Cog):
 		msg, ebd = self._gencard("o", tag)
 		for channel in self._getshared(ctx):
 			await channel.send(msg, embed = ebd)
-
-	@cmds.group(invoke_without_command=True, aliases=["spectaculars", "spectacular"], brief="Commands for Spectaculars")
-	async def spec(self, ctx):
-		"""The group of commands for the Spectaculars tabletop rpg."""
-		pass
-
-	@spec.command(name="i", aliases=["init", "initiative"], brief="Randomize initiative")
-	async def initiative(self, ctx, *choices: str):
-		"""
-		Given a list of names, output that list shuffled.
-		Allows options to be given in the form "thisXnum", which will add "num" instances of "this" to the pool.
-		For example, "Crash Paragon Nautica villainX3" would output a list six people long.
-		Of note:
-		- "X" isn't case sensitive
-		- The number must be positive
-		- Multi-word names can be accomplished by surrounding the whole choice in quotes (e.g. "Death Bladex4" would put four "Death Blade"s on the list).
-		"""
-		final = []
-		for c in choices:
-			# split all in the form thingXnum 
-			base, mult = re.match(r"(.*?)(?:x(\d+)?$", c, flags=re.I).groups()
-			# int(mult), or 1 if mult is None
-			mult = int(mult or 1)
-			for _ in range(mult):
-				final.append(base)
-
-		shuffle(final)
-		ebd = Embed(
-			color = Color.from_rgb(0, 0, 255),
-			title = "Your shuffled initiative is:",
-			description = "\n".join(final)
-		)
-
-		await ctx.send(embed=ebd)

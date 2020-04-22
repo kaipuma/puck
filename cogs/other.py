@@ -1,8 +1,10 @@
 import json
 from typing import Optional
+from random import shuffle
 import re
 
 from discord.ext import commands as cmds
+from discord import Embed, Color
 
 from .modules.misc import TimerConverter, Timer
 
@@ -57,3 +59,32 @@ class Other(cmds.Cog):
 		await existing.stop(tid, ctx.bot.locks["timers"])
 		tstr = f" \"{tag}\"" if tag else ""
 		await ctx.send(f"Timer{tstr} stopped with {existing.remaining} remaining")
+
+	@cmds.command(aliases=["shuff", "shuf", "sh"], brief="shuffle a list")
+	async def shuffle(self, ctx, *choices: str):
+		"""
+		Given a list, output that list shuffled.
+		Allows options to be given in the form "thisXnum", which will add "num" instances of "this" to the pool.
+		For example, "Crash Paragon Nautica villainX3" would output a list six items long.
+		Of note:
+		- "X" isn't case sensitive
+		- The number must be positive
+		- Multi-word names can be accomplished by surrounding the whole choice in quotes (e.g. "Death Bladex4" would put four "Death Blade"s on the list). This includes the "Xnum" part.
+		"""
+		final = []
+		for c in choices:
+			# split all in the form thingXnum 
+			base, mult = re.match(r"(.*?)(?:x(\d+))?$", c, flags=re.I).groups()
+			# int(mult), or 1 if mult is None
+			mult = int(mult or 1)
+			for _ in range(mult):
+				final.append(base)
+
+		shuffle(final)
+		ebd = Embed(
+			color = Color.from_rgb(0, 0, 255),
+			title = "Your shuffled list is:",
+			description = "\n".join(final)
+		)
+
+		await ctx.send(embed=ebd)
