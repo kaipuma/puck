@@ -40,16 +40,8 @@ async def on_ready():
 					print(e)
 	print("Done updating emoji")
 
-	# create all the locks for accessing the data files
-	puck.locks = {
-		"timers": Lock()
-	}
-
 	# clear the timers data file on reboot
-	async with puck.locks["timers"]:
-		with shelve.open("data/timers.shelf") as shelf:
-			for k in list(shelf.keys()):
-				del shelf[k]
+	os.remove("data/timers.shelf")
 
 # change the working directory to the bot root directory
 os.chdir(os.path.dirname(__file__))

@@ -34,23 +34,19 @@ class Timer:
 	def length(self):
 		return self._time
 
-	async def start(self, timerid: str, lock: asyncio.Lock):
+	async def start(self, timerid: str):
 		self._starttime = datetime.now()
 		self._endtime = self._starttime + timedelta(seconds=self._time)
 
-		await lock.acquire()
 		with shelve.open("data/timers.shelf") as shelf:
 			shelf[timerid] = self
-		lock.release()
 
 		await asyncio.sleep(self._time)
 		return self.get(timerid) and True
 
-	async def stop(self, timerid: str, lock: asyncio.Lock):
-		await lock.acquire()
+	async def stop(self, timerid: str):
 		with shelve.open("data/timers.shelf") as shelf:
 			shelf[timerid] = None
-		lock.release()
 
 class TimerConverterError(cmds.CommandError): pass
 class TimerConverter(cmds.Converter):

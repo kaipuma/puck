@@ -28,7 +28,7 @@ class Other(cmds.Cog):
 
 		# send msg, wait for timer to run, then send complete message
 		await ctx.send(startmsg)
-		status = await timer.start(tid, ctx.bot.locks["timers"])
+		status = await timer.start(tid)
 		if status:
 			await ctx.send(endmsg)
 
@@ -57,7 +57,7 @@ class Other(cmds.Cog):
 			return
 
 		# stop the timer and say as such
-		await existing.stop(tid, ctx.bot.locks["timers"])
+		await existing.stop(tid)
 		tstr = f" \"{tag}\"" if tag else ""
 		await ctx.send(f"Timer{tstr} stopped with {existing.remaining} remaining")
 
