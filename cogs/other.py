@@ -23,8 +23,8 @@ class Other(cmds.Cog):
 		
 		# compose message
 		tstr = f" \"{tag}\"" if tag else ""
-		startmsg = f"Timer{tstr} started. Use the 'timer status{tstr}' command to view its status"
-		endmsg = f"Timer{tstr} ended!"
+		startmsg = f"{ctx.author.mention}, your timer{tstr} has started.\nUse the 'timer status{tstr}' command to view its status"
+		endmsg = f"{ctx.author.mention}, your timer{tstr} has ended!"
 
 		# send msg, wait for timer to run, then send complete message
 		await ctx.send(startmsg)

@@ -41,7 +41,8 @@ async def on_ready():
 	print("Done updating emoji")
 
 	# clear the timers data file on reboot
-	os.remove("data/timers.shelf")
+	if os.path.isfile("data/timers.shelf"):
+		os.remove("data/timers.shelf")
 
 # change the working directory to the bot root directory
 os.chdir(os.path.dirname(__file__))
