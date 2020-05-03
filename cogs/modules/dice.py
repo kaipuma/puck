@@ -365,7 +365,6 @@ class Ranged(Entry, RootEntry):
 
 		return t
 
-
 class Basic(Ranged, RootEntry):
 	"""Represents a dice roll in the form "XdY", which rolls X Y-sided dice."""
 	__slots__ = ()
@@ -485,10 +484,12 @@ class Token:
 		for match in re.finditer(master, arg, flags=re.I):
 			# add everything that doesn't match as "tag" tokens
 			# of note, this excludes strings of just whitespace
-			if prev_end is not None:
+			if prev_end is None:
+				tag = arg[:match.start()]
+			else:
 				tag = arg[prev_end:match.start()]
-				if tag.strip():
-					tokens.append(cls("tag", tag, (tag,)))
+			if tag.strip():
+				tokens.append(cls("tag", tag, (tag,)))
 			prev_end = match.end()
 
 			# collect the groups that recieved values
