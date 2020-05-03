@@ -6,7 +6,7 @@ from discord.ext import commands as cmds
 import discord.utils as utils
 from discord import Embed, Color
 
-from .modules.dice import RollConverter, BasicEntry, NumberEntry, SignEntry, TagEntry, SpecialEntry
+from .modules.dice import RollConverter
 from .modules.configs import color_config as colcon
 from .modules.configs import dice_config as dcon
 
@@ -58,65 +58,31 @@ class RPG(cmds.Cog):
 		return channels
 
 	@cmds.group(aliases=["r"], brief="Roll some dice", invoke_without_command=True)
-	async def roll(self, ctx, entries: cmds.Greedy[RollConverter]):
+	async def roll(self, ctx, *, roll: RollConverter):
 		"""
 		Roll some number of dice with potential modifiers.
 		The documentation for this command is quite long, detailing exactly what can and cannot be supplied as an argument. As such, it has been moved to the "roll docs" subcommand. Either call that command, or call the help command on it to read the documentation. Please consider doing so in direct messages with me if you wish not to have long messages in this channel.
 		"""
-		# first, loop over all the entries, inverting any that 
-		# come after a bare "-", and categorizing them all
-		categorized = {"numeric":[], "tags":[], "special":{}}
-		invert_next = False
-		for entry in entries:
-			if isinstance(entry, BasicEntry) or isinstance(entry, NumberEntry):
-				if invert_next:
-					entry.invert()
-					invert_next = False
-				categorized["numeric"].append(entry)
+		# call evaluate to apply all modifiers
+		roll.evaluate()
 
-			elif isinstance(entry, TagEntry):
-				categorized["tags"].append(entry)
+		# create all the strings to be used in the embed
+		title = f"Rolling \"{roll.raw}\"" if roll.tag is None else roll.tag.as_tag()
+		results = "".join(f"\n{b.invoke}: {b.result}" for b in roll.bases)
+		totals = ", ".join(roll.totals) or "No dice rolled"
+		plural = "" if len(roll.bases) == 1 else "s"
 
-			elif isinstance(entry, SpecialEntry):
-				if entry.category not in categorized["special"]:
-					categorized["special"][entry.category] = []
-				categorized["special"][entry.category].append(entry)
-
-			elif isinstance(entry, SignEntry) and entry.sign == -1:
-				invert_next = not invert_next
-
-		# next, generate the embed title. Either the supplied text, or a generic
-		# "Rolling: [dice]" using the entries' .invoke props (ignoring signs and tags)
-		excl = (TagEntry, SignEntry)
-		if categorized["tags"]:
-			title = " ".join(map(str, categorized["tags"]))
-		else:
-			title = f"Rolling: {', '.join(e.invoke for e in entries if e.__class__ not in excl)}"
-
-		# gather the results list (ignoring tags and signs), and the totals list
-		results = []
-		results = "\n".join(f"{e.invoke}: {e.result}" for e in entries if e.__class__ not in excl)
-		totals = []
-		if categorized["numeric"]:
-			totals.append(sum(e.total for e in categorized["numeric"]))
-		if categorized["special"]:
-			for value in categorized["special"].values():
-				subtotal = value[0].total
-				for v in value[1:]:
-					subtotal += v.total
-				totals.append(subtotal.total)
-
-		# create the embed and add the lists
+		# create the embed and add the values
 		ebd = Embed(
 			color = Color.from_rgb(*colcon["roll"]),
 			title = self._parse_emoji(ctx, title),
 		).add_field(
-			name = f"Result{'' if len(entries) == 1 else 's'}:",
+			name = f"Result{plural}:",
 			value = self._parse_emoji(ctx, results),
 			inline = False
 		).add_field(
-			name = f"Total{'' if len(totals) == 1 else 's'}:",
-			value = self._parse_emoji(ctx, ", ".join(map(str, totals) or "0")),
+			name = f"Total{plural}:",
+			value = self._parse_emoji(ctx, totals),
 			inline = False
 		)
 
@@ -127,10 +93,11 @@ class RPG(cmds.Cog):
 	async def roll_docs(self, ctx):
 		"""
 		Roll some number of dice with potential modifiers.
-		Each entry is separated by a space. The core of an entry is the dice. This is in the form "XdY", where X and Y are numbers. This will roll X dice with sides numbered 1 through Y.
-		Alternatively, the entry core could be in the form "XdM-Y", where X and Y are the same, but M specifies a different minimum value. For example, "3d4-6" will roll three dice, each with faces of 4, 5, and 6. Lastly, a "-" may be placed immediately before the entry to negate the result. If the value for X is omitted, the default is 1
+		Each entry is separated by some space. The core of an entry is the dice. This is in the form "XdY", where X and Y are numbers. This will roll X dice with sides numbered 1 through Y.
+		Alternatively, the entry core could be in the form "XrM-Y" to specify a "range" of values to be rolled from. X and Y are the same, but M specifies a different minimum value. For example, "3r4-6" will roll three dice, each with faces of 4, 5, and 6.
+		Lastly, a "-" may be placed immediately before the entry to negate the result. If the value for X is omitted, the default is 1
 
-		An entry can also have modifiers applied to it. Each modifier must be typed IMMEDIATELY after the core, with no spaces in between. The exception to this is if you put the whole entry in quotes. Some examples of this are shown below in the Examples section. Most modifiers have the option to have a number value afterwards. This follows the same rules for spaces noted above. Most of these values default to 1 if not supplied. Any exceptions are noted. The possible modifiers are described here:
+		An entry can also have modifiers applied to it. Some examples of this are shown below in the Examples section. Most modifiers have the option to have a number value afterwards. Most of these values default to 1 if not supplied. Any exceptions are noted. The possible modifiers are described here:
 
 		min : Accept only the smallest roll. A supplied value states how many minimum values to accept.
 		max : Accept only the largest roll. A supplied value states how many maximum values to accept.
@@ -142,10 +109,13 @@ class RPG(cmds.Cog):
 		x : Dice will explode. This rolls an additional die of the same type for every result that is equal to the maximum result. The supplied value can change how many values will explode. For example, a value of 2 will make dice explode on a roll of any of the top 2 possible results.
 		xx : Dice will explode, and those dice can explode, as could those, etc. Besides the recursive behavior, this is identical to the "x" modifier.
 		num : Instead of summing all the valid results, this will count how many results are valid and use that as the total. This does not accept a value.
+		count : Alias for "num"
+		pas : This will result in a "success" if any of the dice rolled are accepted, and a "Failure" otherwise. Putting this on multiple parts of a roll requires all to pass.
+		success: Alias for "pas"
 		+ : This will add the supplied value to the roll as a flat modifier.
 		- : This will subtract the supplied value from the roll as a flat modifier.
 
-		In addition to standard rolls, entries can be some special values. An entry consisting of just a number, with an optional "+" or "-" in front is added (or subtracted) from the total as a flat modifier. Additionally, any entry of just a sign will apply that sign to the next entry (this is an option to cover cases when extra spaces are added. i.e. "- 3d6" is the same as "-3d6", as "-4" and "- 4" are too).
+		In addition to standard rolls, entries can be some special values. An entry consisting of just a number, with an optional "+" or "-" in front is added (or subtracted) from the total as a flat modifier. 
 		The last variety of roll is of special dice. These are specified in a configuration file, and may vary. They always come in the form "XdY", however the "d" is some other character(s), and Y may be non-numeric, depending on the special dice used. Results from these dice are summed and displayed separately from the numeric dice and modifiers. No special dice can take any of the above modifiers that numeric dice can.
 
 		Any entry not matching one of the above types is considered a tag. All tags will be put together and displayed at the top of the response.
@@ -175,7 +145,7 @@ class RPG(cmds.Cog):
 	@roll.command(name="sdocs", aliases=["sdoc"], brief="docs for special dice")
 	async def roll_sdocs(self, ctx):
 		"""
-		Since what special dice are available can change, but this documentation cannot, please call this command to see what they currently are.
+		Since which special dice are available can change, but this documentation cannot, please call this command to see what they currently are.
 		"""
 		ebd = Embed(
 			color = Color.from_rgb(*colcon["roll"]),

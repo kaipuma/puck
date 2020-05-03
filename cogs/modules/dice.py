@@ -1,398 +1,686 @@
+from collections import OrderedDict, Counter
+from copy import deepcopy
 from functools import total_ordering
 from random import randint, shuffle, choice
-from typing import Union, List
 import re
+from typing import Union, List
 
 from discord.ext import commands as cmds
 
 from .configs import dice_config as dcon
 
-class NoMatchError(Exception): pass
-class DiceError(cmds.CommandError): pass
-
 @total_ordering
-class BasicDie:
-	"""A data container for a single numeric die roll"""
-	__slots__ = ["value", "valid", "explosion"]
-
-	def __init__(self, value: int, explosion: int = 0, valid: bool = True):
+class Die:
+	"""Represents a single numeric die roll"""
+	__slots__ = "value", "depth", "valid"
+	def __init__(self, value:int, depth:int = 0, valid:bool = True):
 		self.value = value
-		self.explosion = explosion
 		self.valid = valid
+		self.depth = depth
 
-	__int__ = lambda s: s.value
 	__str__ = lambda s: str(s.value)
-	__repr__ = lambda s: f"BasicDie({s}, {s.explosion}, {s.valid})"
-	__eq__ = lambda s, o: s.value == int(o) if hasattr(o, "__int__") else NotImplemented
-	__le__ = lambda s, o: s.value <= int(o) if hasattr(o, "__int__") else NotImplemented
+	__repr__ = lambda s: f"Die({s.value!r}, {s.depth!r}, {s.valid!r})"
+
+	# these and @total_ordering allow this class to be sorted
+	__le__ = lambda s, o: s.value <= o.value
+	__eq__ = lambda s, o: s.value == o.value
 
 class SpecialDie:
-	"""A data container for a single special die roll"""
-	__slots__ = ["symbols", "category", "total"]
-
-	def __init__(self, category: str, result: Union[str, List[str]]):
-		self.category = category
-		if isinstance(result, str):
-			self.symbols = [result]
+	"""Represents a single special die roll"""
+	__slots__ = "value", "name", "category"
+	def __init__(self, value:str, category:str):
+		if isinstance(value, list):
+			self.value = value[:]
 		else:
-			self.symbols = list(result)
+			self.value = [value]
+		self.category = category
 
-		# count how many of each symbol is here
-		# (more than three of any one will display as "SxN"
-		# where S is the symbol and N is how many there are)
-		counts = dict()
-		reduced = self.reduce(self.symbols)
-		for symb in reduced:
-			if symb not in counts:
-				counts[symb] = 0
-			counts[symb] += 1
+	@property
+	def reduced(self):
+		values = Counter(self.value[:])
+		config = dcon[self.category]
 
-		# add any non-blank value to the "total" string
-		# any occuring more than 3x is depicted once w/ that number
-		self.total = ""
-		blanks = dcon[category]["blank"]
-		for symb in reduced:
-			if symb not in blanks:
-				if counts[symb] > 0:
-					self.total += symb
-				if counts[symb] > 3:
-					self.total += f"x{counts[symb]}"
-					counts[symb] = 0
+		# first, reduce any values to their veneric version
+		if "reduce" in config:
+			for reduce_to, reduce_from in config["reduce"].items():
+				# move all values of any items in reduce_from to reduce_to
+				for v in reduce_from:
+					values[reduce_to] += values[v]
+					values[v] = 0
 
-		# default the total to the default value in the config
-		if not self.total:
-			self.total = dcon[category]["default"]
+		# next, cancel any elements that do so
+		if "cancels" in config:
+			for group in config["cancels"]:
+				for _ in range(32):
+					# get the two values of this group with the
+					# largest number of present items in values
+					_, first = max((values[v], v) for v in group)
+					_, second = max((values[v], v) for v in group if v != first)
 
-	def reduce(self, symbols):
-		"""Reduce a list of symbols based on this category's configs"""
-		symbols = symbols[:]
-		if "reduce" in dcon[self.category]:
-			for i in range(len(symbols)):
-				for base, lst in dcon[self.category]["reduce"].items():
-					if symbols[i] in lst:
-						symbols[i] = base
-		return symbols
+					# if either is zero, then this group is canceled
+					if not (values[first] and values[second]): break
 
+					# otherwise, reduce both values by one
+					values.subtract((first, second))
 
-	__str__ = lambda s: "".join(s.symbols)
+		# then remove any elements designated as blanks
+		if "blank" in config:
+			blanks = config["blank"]
+			if isinstance(blanks, str):
+				blanks = [blanks]
+
+			for blank in blanks:
+				values[blank] = 0
+
+		# return the reduced copy
+		return SpecialDie(list(values.elements()), self.category)
 
 	def __add__(self, other):
-		# can only cancel with other dice in the same category
-		if not isinstance(other, self.__class__) \
-		or other.category != self.category:
+		if not isinstance(other, type(self)) \
+		or not self.category == other.category:
 			return NotImplemented
 
-		# collect all the symbols from both sides
-		all_symb = self.reduce(self.symbols + other.symbols)
+		value = self.value + other.value
+		return type(self)(value, self.category)
 
-		# the cancelation categories. anything in any list in each of these
-		# will cancel with anything else in that list
-		can_cats = dcon[self.category]["cancels"]
+	def __str__(self):
+		values = Counter(self.value)
+		config = dcon[self.category]
+		if "max consecutive" in config:
+			for val, count in list(values.items()):
+				if count > config["max consecutive"]:
+					values[val] = 0
+					values[val + f"x{count}"] = 1
+		return " ".join(sorted(values.elements())) or config["default"]
 
-		# a place to count the symbols while working
-		working = [{name:0 for name in cat} for cat in can_cats]
+	__deepcopy__ = lambda s, m: type(s)(s.value, s.category)
+	__repr__ = lambda s: f"SpecialDie({s.value!r}, {s.category!r})"
 
-		# go through the symbols, finding which category they each belong to
-		# if there's already another symbol in that category with a positive 
-		# count, decrement it. otherwise, increment that symbol's count
-		no_cat = []
-		for symbol in all_symb:
-			for i, cat in enumerate(can_cats):
-				if symbol not in cat: continue
-				for k, v in working[i].items():
-					if v > 0 and k != symbol:
-						working[i][k] -= 1
-						break
-				else:
-					working[i][symbol] += 1
-				break
-			else:
-				no_cat.append(symbol)
-
-		# merge all remaining items
-		result = no_cat
-		for w in working:
-			for k, v in w.items():
-				result += [k]*v
-
-		# return a new SpecialDie object with the canceled list
-		return self.__class__(self.category, result)
-
-class RollEntry:
-	"""
-	A base class for all variety of entries to the "roll" command.
-	All subclasses of this will have a "_regex", which an argument will be checked against on __init__.
-	If it fails, "NoMatchError" will be raised. Otherwise, its groups are stored in "_groups". Subclasses
-	must define "invoke", "result". These represent the incoming argument and the generated results 
-	respectively. "total" represents the numeric representation of the sum of the results, if applicable.
-	"""
-	__slots__ = ["invoke", "result", "total", "_groups"]
-	_regex = re.compile(r"^$")
-
-	def __init__(self, arg: str):
-		match = self.match(arg)
-		if match is None:
-			raise NoMatchError(f"\"{arg}\" doesn't match the regex \"{self._regex.pattern}\".")
-		self._groups = match.groups()
-
-	def match(self, arg: str):
-		return self._regex.match(arg)
-
-class TagEntry(RollEntry):
-	"""A simple RollEntry that accepts any value, for adding tags to rolls"""
-	_regex = re.compile(r"^(.*)$", flags=re.S)
-	__str__ = lambda s: s._groups[0]
-
-class SignEntry(RollEntry):
-	"""
-	An entry in the "roll" command consisting of just a "+" or "-" (for when people forget to add a space).
-	This uses "sign" instead of the standard "values" to store its one value
-	"""
-	__slots__ = ["sign"]
-	_regex = re.compile(r"^([+-])$")
-
-	def __init__(self, arg: str):
-		super().__init__(arg)
-		self.sign = -1 if arg == "-" else 1
-		self.invoke = self.result = arg
-
-class NumberEntry(RollEntry):
-	"""
-	An entry consisting of a single integer value, to add/subtract from totals.
-	This foregos using "values" in favor of storing its one result directly in "total"
-	"""
-	_regex = re.compile(r"^([+-]?)(\d+)$")
-
-	def __init__(self, arg: str):
-		super().__init__(arg)
-		self.total = int(self._groups[1])
-		if self._groups[0] == "-":
-			self.total *= -1
-		self.invoke = self.result = f"{self.total:+}"
-
-	def invert(self):
-		self.total *= -1
-		self.invoke = self.result = f"{self.total:+}"
-
-class BasicEntry(RollEntry):
-	"""An entry representing a basic numeric dice roll (e.g. 2d6, 1d20, etc.)"""
-	__slots__ = ["override", "modifiers", "_values"]
-	# the regex for all the possible modifiers
-	_mod_regex = re.compile(r"\s*(xx|x|<=|>=|<|>|=|min|max|num|\+|-)\s*(\d*)\s*", flags=re.I)
-	_regex = re.compile(fr"^([+-]?)(\d*)d(?:(\d+)-)?(\d+)((?:{_mod_regex.pattern})*)$", flags=re.I)
-	# all the possible comparison modifiers, and their functions
-	_comparisons = {
-		"<=": int.__le__,
-		">=": int.__ge__,
-		"<" : int.__lt__,
-		">" : int.__gt__,
-		"=" : int.__eq__
-	}
-
-	def __init__(self, arg: str):
-		super().__init__(arg)
-		# setup some values to start
+class DiceList(list):
+	"""A list of Dice, automatically generated from the supplied values"""
+	def __init__(self, size:int, minv:int, maxv:int, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 		self.override = None
-		sign = -1 if self._groups[0] == "-" else 1
-		pool = int(self._groups[1] or 1)
-		minimum = int(self._groups[2] or 1)
-		maximum = int(self._groups[3])
-		# a function that randomly generates a new die from local values
-		newval = lambda e=0: BasicDie(sign * randint(minimum, maximum), e)
+		self.size = size
+		self.minv = minv
+		self.maxv = maxv
+		for _ in range(size):
+			self.append(Die(randint(minv, maxv)))
 
-		# generate the list of values to start
-		self._values = []
-		for _ in range(pool):
-			self._values.append(newval())
-
-		# collect up all the modifiers found, and their argument (default 1)
-		self.modifiers = dict()
-		for key, value in self._mod_regex.findall(self._groups[4]):
-			self.modifiers[key] = int(value or 1)
-
-		# generate the invoke, adding the optional minimum and 
-		# modifier values as appropriate (e.g. 1d3-6 [min 3])
-		self.invoke = f"{'-' if sign == -1 else ''}{pool}d"
-		if minimum != 1:
-			self.invoke += f"{minimum}-"
-		self.invoke += str(maximum)
-		for mod, val in self.modifiers.items():
-			self.invoke += f" [{mod}"
-			if val != 1 or mod in self._comparisons:
-				self.invoke += f" {val}"
-			self.invoke += "]"
-
-		# parse the "xx" modifier (exploding recursively)
-		if "xx" in self.modifiers:
-			valid = list(range(maximum + 1 - self.modifiers["xx"], maximum + 1))
-			nxt = self._values
-			iteration = 1
-			while len(nxt) and iteration <= 64:
-				nxt = [newval(iteration) for n in nxt if n in valid]
-				self._values.extend(nxt)
-				iteration += 1
-
-		# parse the "x" modifier (exploding dice)
-		elif "x" in self.modifiers:
-			valid = list(range(maximum + 1 - self.modifiers["x"], maximum + 1))
-			self._values.extend(newval(1) for v in self._values if v in valid)
-
-		# parse the numeric modifiers (an option in case someone forgets to add a
-		# space between arguments). These are denoted with an explosion value of -1
-		if "+" in self.modifiers:
-			self._values.append(BasicDie(self.modifiers["+"], -1))
-		if "-" in self.modifiers:
-			self._values.append(BasicDie(-self.modifiers["-"], -1))
-
-		# run the validate function. This checks all the modifiers that may 
-		# change with an "invert" call, so as to be able to be called from there
-		self.validate()
-
-	def validate(self):
-		# first set all entries to valid
-		for value in self._values:
-			value.valid = True
-
-		# iterate over all comparisons in the modifiers list
-		for mod in self._comparisons.keys():
-			if mod not in self.modifiers:
-				continue
-
-			# mark any that fail the test as invalid (unless they're numeric modifiers)
-			for v in self._values:
-				if not self._comparisons[mod](int(v), self.modifiers[mod]):
-					v.valid = v.explosion == -1
-
-		# mark any values invalid as appropriate to min and max values
-		for mod in ("min", "max"):
-			if mod in self.modifiers:
-				sort = sorted(self._values, reverse=(mod == "max"))
-				for i in range(self.modifiers[mod], len(self._values)):
-					sort[i].valid = sort[i].explosion == -1
-
-		# set the override to the numer of valid values if "num" was used
-		if "num" in self.modifiers:
-			self.override = sum(v.valid for v in self._values)
+	def new(self, depth = 0, valid = True):
+		self.append(Die(randint(self.minv, self.maxv), depth, valid))
 
 	@property
 	def result(self):
-		# sort values by their explosion value, then by valid/invalid
-		results = dict()
-		for v in self._values:
-			if v.explosion not in results:
-				results[v.explosion] = {"valid":[], "invalid":[]}
-			if v.valid:
-				results[v.explosion]["valid"].append(v)
+		data = dict()
+		for die in self:
+			dp = die.depth
+			if dp not in data:
+				data[dp] = {True:[], False:[]}
+			data[dp][die.valid].append(die)
+
+		lists = []
+		for depth, dice in sorted(data.items()):
+			if depth == -1:
+				parens = ("(", ")")
+			elif depth == 0:
+				parens = ("", "")
 			else:
-				results[v.explosion]["invalid"].append(v)
+				parens = ("[", "]")
 
-		# loop over every used explosion value, adding to the return string 
-		# as appropriate (marking numeric modifiers with "()", and each 
-		# iteration of explosions with "[]", as well as using ~~these~~ to
-		# strike through any values sorted into the invalid lists)
-		s = ""
-		max_expl = max(results.keys())
-		min_expl = min(results.keys())
-		for i in range(min_expl, max_expl+1):
-			if i == -1:
-				s += "("
-			elif i != 0:
-				s += " ["
-
-			if results[i]["invalid"]:
-				s += f"~~{', '.join(map(str, results[i]['invalid']))}~~"
-				if results[i]["valid"]:
+			s = parens[0]
+			if data[depth][False]:
+				s += f"~~{', '.join(map(str, data[depth][False]))}~~"
+				if data[depth][True]:
 					s += ", "
+			lists.append(s + ", ".join(map(str, data[depth][True])) + parens[1])
 
-			if results[i]["valid"]:
-				s += ", ".join(map(str, results[i]["valid"]))
-
-			if i == -1:
-				s += ") "
-			elif i != 0:
-				s += "]"
-
-		# show the overide if it's set
+		s = " ".join(lists)
 		if self.override is not None:
-			s += f" => {self.override}"
-
+			s += f" -> {self.override}"
 		return s
 
 	@property
 	def total(self):
-		# return either the override, or the sum of all valid values
+		return sum(map(lambda d: d.valid and d.value, self))
+
+	def __str__(self):
+		s = super().__str__()
 		if self.override is not None:
-			return self.override
-		else:
-			return sum(map(int, (v for v in self._values if v.valid)))
+			s += f"({self.override})"
+		return s
 
-	def invert(self):
-		# first, invert the sign on the value of all BasicDie entries
-		# in "_values", then adding/removing a "-" from the invoke as
-		# needed, then run validate to refresh valid and override values
-		for v in self._values:
-			v.value *= -1
-		if self.invoke[0] == "-":
-			self.invoke = self.invoke[1:]
-		else:
-			self.invoke = "-" + self.invoke
-		self.validate()
+class Entry:
+	__slots__ = "_parent", "_children", "invoke", "result", "token"
+	_allowed_additions = ()
+	def __init__(self, token = None):
+		self.token = token
+		self._parent = None
+		self._children = []
+		self.invoke = ""
+		self.result = ""
 
-class SpecialEntry(RollEntry):
-	"""An entry for special dice, as defined in the dice.json config file"""
-	__slots__ = ["category", "die", "_values"]
-	def __init__(self, arg: str):
-		# this subclass will overwrite the base class's __init__ entirely
-		# since there's more than one possible regex to match against
+	def add(self, item):
+		if not isinstance(item, Entry):
+			raise ValueError("Added item must be a subclass of Entry")
 
-		# create then check the regexes based on the config data
-		for name, data in dcon.items():
-			aliases = sum(data["aliases"].values(), [])
-			aliases = sorted(aliases, key=lambda a: len(a), reverse=True)
-			regex_string = fr"^(\d*){data['delimiter']}({'|'.join(aliases)})$"
-			match = re.match(regex_string, arg, flags=re.I)
-			if match is not None:
-				self._groups = match.groups()
-				self.category = name
-				break
-		else:
-			# if no regex matched, raise the appropriate error, like in the base
-			raise NoMatchError(f"\"{arg}\" doesn't match any special die regex.")
+		if isinstance(item, self._allowed_additions):
+			self._children.append(item)
+			item._parent = self
+			return True
 
-		# collect some variables
-		pool = int(self._groups[0] or 1)
-		alias = self._groups[1]
-		for name, aliases in dcon[self.category]["aliases"].items():
-			if alias in aliases:
-				self.die = name
-				break
-		faces = dcon[self.category]["faces"][self.die]
+		if self._parent is None:
+			return False
 
-		# roll dice
-		self._values = []
-		for _ in range(pool):
-			self._values.append(SpecialDie(self.category, choice(faces)))
-		# define the invoke and results strings
-		self.invoke = f"{pool}{dcon[self.category]['delimiter']}{self.die}"
-		self.result = ", ".join(map(str, self._values))
+		return self._parent.add(item)
+
+	def as_tag(self):
+		s = ""
+		if self.token is not None:
+			s += self.token.raw + " "
+
+		for child in self._children:
+			s += child.as_tag()
+
+		return s
+
+	def evaluate(self, dice:DiceList = None):
+		return self
+
+class RootEntry:
+	"""A base class to track which classes can be roots of their Entry trees."""
+	__slots__ = ()
+
+class OneChild(Entry):
+	"""Any Entry which can accept only one child"""
+	__slots__ = ()
+	def add(self, item):
+		if len(self._children) > 0:
+			if self._parent is None:
+				return False
+			return self._parent.add(item)
+
+		return super().add(item)
+
+class NoChild(Entry):
+	"""Any Entry which can accept no children"""
+	__slots__ = ()
+	def add(self, item):
+		if self._parent is None:
+			return False
+		return self._parent.add(item)
+
+class Number(Entry, RootEntry):
+	"""Represents a number, wither as an argument for a modifier, or a flat addition to a roll."""
+	__slots__ = "value"
+	def __init__(self, value, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.value = int(value)
+		self.invoke = f"[{self.value:+}]"
+		self.result = f"{self.value:+}"
+
+	def evaluate(self, dice:DiceList = None):
+		if dice is None:
+			return self
+		dice.append(Die(self.value, depth=-1))
+
+class Flat(Number):
+	"""Represents a flat modifier to a numeric roll (but not an argument to another modifier)."""
+	__slots__ = ()
+
+class Modifier(OneChild):
+	"""Represents a modifier to a numeric roll."""
+	__slots__ = "name", "_default", "_hidden", "_comp", "_evaluated"
+	_allowed_additions = (Number,)
+	# this stores the defalt value, and whether to hide that 
+	# value if it's the one used, and any comparison function
+	_configs = {
+		"xx": (1, True, None), 
+		"x": (1, True, None), 
+		"<=": (0, False, int.__le__), 
+		">=": (0, False, int.__ge__), 
+		"<": (0, False, int.__lt__), 
+		">": (0, False, int.__gt__), 
+		"=": (0, False, int.__eq__), 
+		"min": (1, True, None), 
+		"max": (1, True, None)
+	}
+	def __init__(self, name, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.name = name
+		self._evaluated = False
+		configs = self._configs[name]
+		self._default = configs[0]
+		self._hidden = configs[1]
+		self._comp = configs[2]
+		self.invoke = f"[{self.name}]"
+		if not self._hidden:
+			self.invoke = f"[{self.name} {self._default}]"
+
+	def evaluate(self, dice:DiceList):
+		value = self._default
+		if self._children:
+			value = self._children[0].value
+		
+		self.invoke = f"[{self.name} {value}]"
+		if self._hidden and value == self._default:
+			self.invoke = f"[{self.name}]"
+
+		if self.name in ("min", "max"):
+			ordered = sorted(dice, reverse=(self.name == "max"))
+			for i, die in enumerate(ordered):
+				if die.depth >= 0 and i >= value:
+					die.valid = False
+
+		elif self._comp is not None:
+			for die in dice:
+				if die.depth >= 0 and not self._comp(die.value, value):
+					die.valid = False
+
+		elif self.name == "x":
+			# never evaluate this modifier more than once
+			if self._evaluated: return self
+			thold = dice.maxv - value
+			toadd = sum(d.value > thold for d in dice if d.depth >= 0)
+			for _ in range(toadd):
+				dice.new(depth=1)
+
+		elif self.name == "xx":
+			# never evaluate this modifier more than once
+			if self._evaluated: return self
+			thold = dice.maxv - value
+			toadd = sum(d.value > thold for d in dice if d.depth >= 0)
+			level = 1
+			while (toadd > 0) and (level < 64):
+				for _ in range(toadd):
+					dice.new(depth=level)
+					# only decrement toadd if the value misses the threshold
+					toadd -= dice[-1].value <= thold 
+				level += 1
+
+		self._evaluated = True
+		return self
+
+class Counters(Modifier, NoChild):
+	"""Represents a modifier to a numeric roll that counts valid dice"""
+	__slots__ = ()
+	# this stores the defalt value, and whether to hide that 
+	# value if it's the one used, and any comparison function
+	_configs = {
+		"num": (0, True, None),
+		"count": (0, True, None),
+		"pas": (0, True, None),
+		"success": (0, True, None)
+	}
+
+	def evaluate(self, dice:DiceList):
+		if self.name in ("num", "count"):
+			dice.override = sum(d.valid for d in dice)
+
+		elif self.name in ("pas", "success"):
+			dice.override = any(d.valid for d in dice)
+
+		self._evaluated = True
+		return self
+
+class Ranged(Entry, RootEntry):
+	"""Represents a dice roll in the form "XrY-Z", which rolls X dice numbered Y-Z."""
+	__slots__ = "sign", "pool", "minv", "maxv", "roll", "_invoke"
+	_allowed_additions = Number, Flat, Modifier
+	def __init__(self, sign, pool, minv, maxv, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.sign = "-" if sign == "-" else "+"
+		self.pool = int(pool or 1)
+		self.minv = int(minv)
+		self.maxv = int(maxv)
+		self.roll = DiceList(self.pool, self.minv, self.maxv)
+		self._invoke = f"{self.sign}{self.pool}r{self.minv}-{self.maxv}"
+		self.invoke = self._invoke
+
+	def evaluate(self):
+		for child in self._children:
+			child.evaluate(self.roll)
+
+		self.result = self.roll.result
+		self.invoke = self._invoke
+		for mod in self._children:
+			self.invoke += " " + mod.invoke
+		return self
 
 	@property
 	def total(self):
-		if not self._values:
-			return SpecialDie(self.category, dcon[self.category]["default"])
-		result = self._values[0]
-		for v in self._values[1:]:
-			result += v
+		if self.roll.override is None:
+			return self.roll.total
+
+		if any(self.roll.override is b for b in (True, False)):
+			return self.roll.override
+
+		t = self.roll.override
+		for mod in self._children:
+			if isinstance(mod, Flat):
+				t += mod.value
+
+		return t
+
+
+class Basic(Ranged, RootEntry):
+	"""Represents a dice roll in the form "XdY", which rolls X Y-sided dice."""
+	__slots__ = ()
+	def __init__(self, sign, pool, maxv, *args, **kwargs):
+		super().__init__(sign, pool, 1, maxv, *args, **kwargs)
+		self._invoke = f"{self.sign}{self.pool}d{self.maxv}"
+		self.invoke = self._invoke
+
+class Special(Entry, RootEntry):
+	"""Represents any roll of dice defined in the dice.json config file"""
+	__slots__ = "pool", "name", "category", "alias", "roll"
+	def __init__(self, pool, name, category, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.category = category
+		self.pool = int(pool or 1)
+		self.alias = name
+		config = dcon[category]
+
+		# if this is a dummy class for addition,
+		if self.alias == "":
+			self.name = ""
+			rawrolls = ("" for _ in range(self.pool))
+
+		else:
+			self.name = next(k for k, v in config["aliases"].items() if name in v)
+			rawrolls = (choice(config["faces"][self.name]) for _ in range(self.pool))
+
+		self.roll = tuple(SpecialDie(r, category) for r in rawrolls)
+		self.invoke = f"{self.pool}{config['delimiter']}{self.name}"
+		self.result = ", ".join(str(r) for r in self.roll)
+
+	@property
+	def total(self):
+		t = deepcopy(self.roll[0])
+		for r in self.roll[1:]:
+			t += r
+		return t
+
+	def __deepcopy__(self, memo):
+		new = type(self)(self.pool, self.alias, self.category)
+		new.roll = deepcopy(self.roll, memo)
+		new.invoke = f"{new.pool}{config['delimiter']}{new.name}"
+		new.results = ", ".join(str(r) for r in new.roll)
+		return new
+
+	def __add__(self, other):
+		if not isinstance(other, type(self)) \
+		or not self.category == other.category:
+			return NotImplemented
+
+		new = deepcopy(self)
+		if self.name != other.name:
+			new.alias = new.name = ""
+		
+		allrolls = self.roll + other.roll
+		new.roll = type(new).reduce(allrolls, new.category)
+
+class Tag(Entry):
+	"""Represents miscellaneous other text used to tag a roll."""
+	_allowed_additions = Modifier, Number, Flat, Counters
+	def __init__(self, value, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.value = value
+
+class MasterTag(Entry, RootEntry):
+	"""Each roll will have one MasterTag that has all other tags as children."""
+	_allowed_additions = (Tag,)
+
+	def as_tag(self):
+		# turn any series of whitespace into a single space
+		return " ".join(re.findall(r"\S+", super().as_tag()))
+
+	@property
+	def is_empty(self):
+		return not self._children
+
+class Token:
+	__slots__ = "name", "args", "raw", "subname"
+	# all the basic regexes for different possible elements of a "roll" command
+	# the first group collects the entire raw sting used
+	_regexes = OrderedDict(
+		basic = r"([+-]?)(\d*)d(\d+)",
+		range = r"([+-]?)(\d*)r(\d+)-(\d+)",
+		flat = r"([+-]\d+)",
+		number = r"(\d+)",
+		counters = r"(num|count|pas|success)",
+		modifier = r"(xx|x|<=|>=|<|>|=|min|max)"
+	)
+	_master_regex = "|".join(fr"(?P<{k}>{v})" for k, v in _regexes.items())
+
+	@classmethod
+	def _get_special_regexes(cls):
+		"""Get a dict of regexes for special dice defined by the config file"""
+		regexes = dict()
+		for category, data in dcon.items():
+			# flatten the lists of aliases
+			aliases = [re.escape(i) for l in data["aliases"].values() for i in l]
+			aliases = "|".join(aliases)
+			# get the delimiter
+			delim = re.escape(data['delimiter'])
+			# make the regex string
+			regexes[category] = fr"(?:(?<=\s)|^)(\d*){delim}({aliases})(?=\s|$)"
+
+		return regexes
+
+	@classmethod
+	def parse(cls, arg):
+		"""Parse a string into tokens"""
+		# prepare the master regex
+		sregs = cls._get_special_regexes()
+		master = "|".join(fr"(?P<special_{k}>{v})" for k, v in sregs.items())
+		master += "|" + cls._master_regex
+
+		tokens = []
+		prev_end = None
+		# iterate over all matches
+		for match in re.finditer(master, arg, flags=re.I):
+			# add everything that doesn't match as "tag" tokens
+			# of note, this excludes strings of just whitespace
+			if prev_end is not None:
+				tag = arg[prev_end:match.start()]
+				if tag.strip():
+					tokens.append(cls("tag", tag, (tag,)))
+			prev_end = match.end()
+
+			# collect the groups that recieved values
+			groups = []
+			for group in match.groups():
+				if group is not None:
+					groups.append(group)
+
+			raw = groups[0]
+			args = tuple(groups[1:])
+			name = match.lastgroup
+
+			# create the token based on if it's special or not
+			special = re.match(r"special_(.+)", name)
+			if special is not None:
+				tokens.append(cls("special", raw, args, special.group(1)))
+			else:
+				tokens.append(cls(name, raw, args))
+
+		# add any trailing "tag" parts
+		tag = arg[prev_end or 0:]
+		if tag.strip():
+			tokens.append(cls("tag", tag, (tag,)))
+
+		return tokens
+
+	@classmethod
+	def evaluate(cls, tokens):
+		"""Turn a list of tokens into their classes"""
+		result = []
+		for token in tokens:
+			name, args = token.name, token.args
+			if name == "special":
+				result.append(cls._classes[name](*args, token=token, category=token.subname))
+			else:
+				result.append(cls._classes[name](*args, token=token))
 
 		return result
 
+	def __init__(self, name, raw, args, subname=None):
+		self.name = name
+		self.raw = raw
+		self.args = args
+		self.subname = subname
+
+	__str__ = lambda s: f"{s.name}: {s.args}"
+	__repr__ = lambda s: f"Token({s.name!r}, {s.args!r})"
+
+class Roll:
+	# a dict of classes that represent the entry types
+	# the keys are the same as the Token._regexes, plus "special" and "tag"
+	_classes = {
+		"basic": Basic,
+		"range": Ranged,
+		"flat": Flat,
+		"number": Number,
+		"counters": Counters,
+		"modifier": Modifier,
+		"special": Special,
+		"tag": Tag
+	}
+
+	def __init__(self, tokens):
+		self.tokens = tokens
+		self.tag = MasterTag()
+		self.raw = " ".join(map(lambda t:t.raw.strip(), tokens))
+
+		# here we turn each token into a full "Entry" subclass instance
+		# then add each into a series of tree structures for evaluating
+		# "prev" will track the last "Entry" subclass instance created
+		prev = None
+		self.bases = []
+		for token in tokens:
+			# first get the appropriate class, and make the instance
+			cls = self._classes[token.name]
+			args = token.args
+			if token.name == "special":
+				new = cls(*args, token=token, category=token.subname)
+			else:
+				new = cls(*args, token=token)
+
+			# any tags get added to the master tag, this should never fail
+			if isinstance(new, Tag):
+				self.tag.add(new)
+
+			# if this isn't the first token, try to add it to the prev tree
+			elif prev is not None:
+				success = prev.add(new)
+
+				# if it fails and is a possible root, add it to bases
+				# otherwise, raise an error
+				if success is False:
+					if not isinstance(new, RootEntry):
+						raise ValueError(f"Cannot fit \"{new!r}\" in tree.")
+					self.bases.append(new)
+
+			# if it's the first token
+			else:
+				# and it's a valid root, add it to bases
+				if isinstance(new, RootEntry):
+					self.bases.append(new)
+
+				# otherwise, try to add it to a tag, raising an error if that fails
+				else:
+					newtag = Tag("")
+					success = newtag.add(new)
+					if success is False:
+						raise ValueError(f"\"{new!r}\" cannot be a base or tag.")
+					self.tag.add(newtag)
+
+			# set the next "prev" value to this token's class
+			prev = new
+
+		# set self.tag to None if no tags were added
+		if self.tag.is_empty:
+			self.tag = None
+
+	def evaluate(self):
+		for base in self.bases:
+			base.evaluate()
+		return self
+
+	@property
+	def num_total(self):
+		result = None
+		for base in self.bases:
+			if isinstance(base, (Number, Ranged)):
+				if not any(base.total is b for b in (True, False)):
+					result = (result or 0) + base.total
+
+			elif isinstance(base, Number):
+				result = (result or 0) + base.value
+
+		return result
+
+	@property
+	def other_totals(self):
+		success = None
+		specials = {}
+		for base in self.bases:
+			# add any boolean numeric results
+			if isinstance(base, (Number, Ranged)):
+				if any(base.total is b for b in (True, False)):
+					if success is None: success = True
+					success &= base.total
+
+			# add any special dice results
+			elif isinstance(base, Special):
+				if base.category in specials:
+					specials[base.category] += base.total
+				else:
+					specials[base.category] = base.total
+
+		results = []
+		if success is not None:
+			results.append("Success" if success else "Failure")
+
+		for sdie in specials.values():
+			results.append(str(sdie.reduced))
+
+		return results
+
+	@property
+	def totals(self):
+		num = self.num_total
+		if num is not None:
+			return [str(num)] + self.other_totals
+		return self.other_totals
+
+class TokenConverter(cmds.Converter):
+	async def convert(self, ctx, arg: str):
+		return Token.parse(arg)
+
 class RollConverter(cmds.Converter):
 	async def convert(self, ctx, arg: str):
-		# this order matters, since TagEntry is a catchall
-		for cls in (BasicEntry, NumberEntry, SpecialEntry, SignEntry, TagEntry):
-			try:
-				return cls(arg)
-			except NoMatchError:
-				continue
+		return Roll(Token.parse(arg))
 
-		raise DiceError(f"Cannot convert {arg} to any RollEntry subclass")
+if __name__ == '__main__':
+	for raw in ("2sa", "2d6+3   test  d10all", "6d3xx=3num+3", "2sa d100", "d100<=60pas"):
+		print("----------------------------------")
+		print(f"Raw:\n\t{raw}")
+
+		print("Tokens:")
+		tokens = Token.parse(raw)
+		for token in tokens:
+			print(f"\t{token}")
+
+		print("Bases:")
+		roll = Roll(tokens)
+		for base in roll.bases:
+			base.evaluate()
+			print(f"\t{base.invoke}: {base.result}")
+
+		print(f"Tag:\n\t{roll.tag.as_tag() or 'None'}")
+
+		print("Totals:")
+		print(f"\tNumeric: {roll.num_total}")
+		print(f"\tOther: {', '.join(roll.other_totals) or 'None'}")
