@@ -194,10 +194,7 @@ class RPG(cmds.Cog):
 			return
 
 		roll = " ".join(map(lambda t: t.raw.strip(), name))
-		s = f"That preset for you here would roll \"{roll}\""
-		s += "\nTo view all possible presets for you in this channel, use this command without any arguments."
-		s += "\nTo set/remove this preset for you, use the preset set/remove subcommands."
-		await ctx.send(s)
+		await ctx.send(f"That preset for you here would roll \"{roll}\"")
 
 	@roll_preset.command(name="set", aliases=["s"], brief="set a user preset")
 	async def roll_preset_set(self, ctx, name: str, *, roll: TokenConverter):
