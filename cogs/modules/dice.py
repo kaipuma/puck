@@ -136,8 +136,11 @@ class DiceList(list):
 			lists.append(s + ", ".join(map(str, data[depth][True])) + parens[1])
 
 		s = " ".join(lists)
-		if self.override is not None:
+		if isinstance(self.override, bool):
+			s += f" -> {'Success' if self.override else 'Failure'}"
+		elif self.override is not None:
 			s += f" -> {self.override}"
+
 		return s
 
 	@property
@@ -352,7 +355,7 @@ class Ranged(Entry, RootEntry):
 		if self.roll.override is None:
 			return self.roll.total
 
-		if any(self.roll.override is b for b in (True, False)):
+		if isinstance(self.roll.override, bool):
 			return self.roll.override
 
 		t = self.roll.override
@@ -613,7 +616,7 @@ class Roll:
 		result = None
 		for base in self.bases:
 			if isinstance(base, (Number, Ranged)):
-				if not any(base.total is b for b in (True, False)):
+				if not isinstance(base.total, bool):
 					result = (result or 0) + base.total
 
 			elif isinstance(base, Number):
@@ -628,7 +631,7 @@ class Roll:
 		for base in self.bases:
 			# add any boolean numeric results
 			if isinstance(base, (Number, Ranged)):
-				if any(base.total is b for b in (True, False)):
+				if isinstance(base.total, bool):
 					if success is None: success = True
 					success &= base.total
 
