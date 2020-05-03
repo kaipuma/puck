@@ -5,7 +5,8 @@ import os
 _paths = {
 	"dice": Path("./configs/dice.json"),
 	"emoji": Path("./configs/emoji.json"),
-	"colors": Path("./configs/colors.json")
+	"colors": Path("./configs/colors.json"),
+	"rolls": Path("./configs/rolls.json")
 }
 
 class _Reader:
@@ -33,3 +34,4 @@ class _Reader:
 dice_config = _Reader(_paths["dice"])
 emoji_config = _Reader(_paths["emoji"])
 color_config = _Reader(_paths["colors"])
+rolls_config = _Reader(_paths["rolls"])

@@ -1,0 +1,13 @@
+{
+	"routine": "Routine d20 >= 0 success",
+	"simple": "Simple d20 >= 3 success",
+	"standard": "Standard d20 >= 6 success",
+	"demanding": "Demanding d20 >= 9 success",
+	"difficult": "Difficult d20 >= 12 success",
+	"challenging": "Challenging d20 >= 15 success",
+	"intimidating": "Intimidating d20 >= 18 success",
+	"formidable": "Formidable d20 >= 21 success",
+	"heroic": "Heroic d20 >= 24 success",
+	"immortal": "Immortal d20 >= 27 success",
+	"impossible": "Impossible d20 >= 30 success"
+}

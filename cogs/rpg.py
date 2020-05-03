@@ -1,14 +1,16 @@
 from typing import Optional, Union
 import json
 import re
+import shelve
 
 from discord.ext import commands as cmds
 import discord.utils as utils
 from discord import Embed, Color
 
-from .modules.dice import RollConverter
+from .modules.dice import TokenConverter, PresetConverter, Roll
 from .modules.configs import color_config as colcon
 from .modules.configs import dice_config as dcon
+from .modules.configs import rolls_config as rcon
 
 class RPG(cmds.Cog):
 	def _parse_emoji(self, ctx, text):
@@ -58,11 +60,14 @@ class RPG(cmds.Cog):
 		return channels
 
 	@cmds.group(aliases=["r"], brief="Roll some dice", invoke_without_command=True)
-	async def roll(self, ctx, *, roll: RollConverter):
+	async def roll(self, ctx, preset: Optional[PresetConverter] = [], *, roll: Optional[TokenConverter] = []):
 		"""
 		Roll some number of dice with potential modifiers.
 		The documentation for this command is quite long, detailing exactly what can and cannot be supplied as an argument. As such, it has been moved to the "roll docs" subcommand. Either call that command, or call the help command on it to read the documentation. Please consider doing so in direct messages with me if you wish not to have long messages in this channel.
 		"""
+		# convert arguments to a Roll object
+		roll = Roll(preset + roll)
+
 		# call evaluate to apply all modifiers
 		roll.evaluate()
 
@@ -170,6 +175,69 @@ class RPG(cmds.Cog):
 			)
 
 		await ctx.send(embed=ebd)
+
+	@roll.group(name="preset", aliases=["pset"], brief="view and create presets", invoke_without_command=True)
+	async def roll_preset(self, ctx, name: Optional[PresetConverter] = None):
+		if name is None:
+			# strt with any global presets
+			ps = set(rcon.keys())
+			with shelve.open("data/presets.shelf") as shelf:
+				# check if there's presets for this channel
+				if "channel" in shelf and str(ctx.channel.id) in shelf["channel"]:
+					ps.update(shelf["channel"][str(ctx.channel.id)].keys())
+
+				# check if there's presets for this user
+				if "user" in shelf and str(ctx.author.id) in shelf["user"]:
+					ps.update(shelf["user"][str(ctx.author.id)].keys())
+
+			await ctx.send(f"The possible presets for {ctx.author.mention} in this channel are: " + ", ".join(ps))
+			return
+
+		roll = " ".join(map(lambda t: t.raw.strip(), name))
+		s = f"That preset for you here would roll \"{roll}\""
+		s += "\nTo view all possible presets for you in this channel, use this command without any arguments."
+		s += "\nTo set/remove this preset for you, use the preset set/remove subcommands."
+		await ctx.send(s)
+
+	@roll_preset.command(name="set", aliases=["s"], brief="set a user preset")
+	async def roll_preset_set(self, ctx, name: str, *, roll: TokenConverter):
+		name = name.lower()
+		with shelve.open("data/presets.shelf") as shelf:
+			if "user" not in shelf:
+				shelf["user"] = {}
+
+			# this and the "shelf["user"] = udict" below are
+			# to manage writing to mutable shelf entries
+			udict = shelf["user"]
+
+			uid = str(ctx.author.id)
+			if uid not in udict:
+				print("setting uid")
+				udict[uid] = {}
+
+			udict[uid][name] = roll
+			shelf["user"] = udict
+			await ctx.send("Preset set, try it out!")
+
+	@roll_preset.command(name="remove", aliases=["r"], brief="remove a user preset")
+	async def roll_preset_remove(self, ctx, name: str):
+		name = name.lower()
+		with shelve.open("data/presets.shelf") as shelf:
+			if "user" not in shelf:
+				shelf["user"] = {}
+
+			# this and the "shelf["user"] = udict" below are
+			# to manage writing to mutable shelf entries
+			udict = shelf["user"]
+
+			uid = str(ctx.author.id)
+			if uid not in udict or name not in udict[uid]:
+				await ctx.send("No such user preset defined for you.")
+				return
+
+			del udict[uid][name]
+			shelf["user"] = udict
+			await ctx.send("Preset removed.")
 
 	@cmds.command(aliases=["x"], brief="Invoke the x-card")
 	async def xcard(self, ctx, *, tag: Optional[str] = ""):

@@ -3,11 +3,12 @@ from copy import deepcopy
 from functools import total_ordering
 from random import randint, shuffle, choice
 import re
+import shelve
 from typing import Union, List
 
 from discord.ext import commands as cmds
 
-from .configs import dice_config as dcon
+from .configs import dice_config as dcon, rolls_config as rcon
 
 @total_ordering
 class Die:
@@ -222,7 +223,7 @@ class Number(Entry, RootEntry):
 		self.invoke = f"[{self.value:+}]"
 		self.result = f"{self.value:+}"
 
-	def evaluate(self, dice:DiceList = None):
+	def evaluate(self, dice:DiceList = None, flat:int = 0):
 		if dice is None:
 			return self
 		dice.append(Die(self.value, depth=-1))
@@ -260,7 +261,7 @@ class Modifier(OneChild):
 		if not self._hidden:
 			self.invoke = f"[{self.name} {self._default}]"
 
-	def evaluate(self, dice:DiceList):
+	def evaluate(self, dice:DiceList, flat:int = 0):
 		value = self._default
 		if self._children:
 			value = self._children[0].value
@@ -277,7 +278,7 @@ class Modifier(OneChild):
 
 		elif self._comp is not None:
 			for die in dice:
-				if die.depth >= 0 and not self._comp(die.value, value):
+				if die.depth >= 0 and not self._comp(die.value+flat, value):
 					die.valid = False
 
 		elif self.name == "x":
@@ -316,7 +317,7 @@ class Counters(Modifier, NoChild):
 		"success": (0, True, None)
 	}
 
-	def evaluate(self, dice:DiceList):
+	def evaluate(self, dice:DiceList, flat:int = 0):
 		if self.name in ("num", "count"):
 			dice.override = sum(d.valid for d in dice)
 
@@ -341,8 +342,9 @@ class Ranged(Entry, RootEntry):
 		self.invoke = self._invoke
 
 	def evaluate(self):
+		flat = sum(c.value for c in self._children if isinstance(c, Flat))
 		for child in self._children:
-			child.evaluate(self.roll)
+			child.evaluate(self.roll, flat=flat)
 
 		self.result = self.roll.result
 		self.invoke = self._invoke
@@ -667,24 +669,26 @@ class RollConverter(cmds.Converter):
 	async def convert(self, ctx, arg: str):
 		return Roll(Token.parse(arg))
 
-if __name__ == '__main__':
-	for raw in ("2sa", "2d6+3   test  d10all", "6d3xx=3num+3", "2sa d100", "d100<=60pas"):
-		print("----------------------------------")
-		print(f"Raw:\n\t{raw}")
+class PresetConverterError(cmds.CommandError): pass
+class PresetConverter(cmds.Converter):
+	async def convert(self, ctx, arg: str):
+		arg = arg.lower()
+		# check global configs first
+		for name, text in rcon.items():
+			if arg == name:
+				return Token.parse(text)
 
-		print("Tokens:")
-		tokens = Token.parse(raw)
-		for token in tokens:
-			print(f"\t{token}")
+		with shelve.open("data/presets.shelf") as shelf:
+			# then check if there's such a preset for this channel
+			if "channel" in shelf \
+			and str(ctx.channel.id) in shelf["channel"] \
+			and arg in shelf["channel"][str(ctx.channel.id)]:
+				return shelf["channel"][str(ctx.channel.id)][arg]
 
-		print("Bases:")
-		roll = Roll(tokens)
-		for base in roll.bases:
-			base.evaluate()
-			print(f"\t{base.invoke}: {base.result}")
+			# last, check if there's such a preset for this user
+			if "user" in shelf \
+			and str(ctx.author.id) in shelf["user"] \
+			and arg in shelf["user"][str(ctx.author.id)]:
+				return shelf["user"][str(ctx.author.id)][arg]
 
-		print(f"Tag:\n\t{roll.tag.as_tag() or 'None'}")
-
-		print("Totals:")
-		print(f"\tNumeric: {roll.num_total}")
-		print(f"\tOther: {', '.join(roll.other_totals) or 'None'}")
+		raise PresetConverterError(f"Could not find preset for {arg}")
