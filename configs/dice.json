@@ -178,19 +178,21 @@
 
 		"default": ":sw_blank:",
 
-		"delimiter": "sw"
+		"delimiter": "sw",
+
+		"max consecutive": 3
 	},
 
 	"fate":
 	{
 		"faces":
 		{
-			" fate": ["+", "+", "0", "0", "-", "-"]
+			"ate": ["+", "+", "0", "0", "-", "-"]
 		},
 
 		"aliases":
 		{
-			" fate": ["ate", "", "udge"]
+			"ate": ["ate", "udge"]
 		},
 
 		"cancels":
