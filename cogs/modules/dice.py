@@ -475,7 +475,7 @@ class Token:
 		sregs = cls._get_special_regexes()
 		master = "|".join(fr"(?P<special_{k}>{v}\s*)" for k, v in sregs.items())
 		master += "|" + cls._master_regex
-		master += r"|(?P<tag>(\S*\s*))"
+		master += r"|(?P<tag>(\S+\s*))"
 
 		tokens = []
 		# iterate over all matches
