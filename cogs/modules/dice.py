@@ -330,7 +330,7 @@ class Counters(Modifier, NoChild):
 class Ranged(Entry, RootEntry):
 	"""Represents a dice roll in the form "XrY-Z", which rolls X dice numbered Y-Z."""
 	__slots__ = "sign", "pool", "minv", "maxv", "roll", "_invoke"
-	_allowed_additions = Number, Flat, Modifier
+	_allowed_additions = Number, Flat, Modifier, Counters
 	def __init__(self, sign, pool, minv, maxv, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.sign = "-" if sign == "-" else "+"
