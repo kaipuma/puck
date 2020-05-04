@@ -168,7 +168,7 @@ class Entry:
 		if not isinstance(item, Entry):
 			raise ValueError("Added item must be a subclass of Entry")
 
-		if isinstance(item, self._allowed_additions):
+		if type(item) in self._allowed_additions:
 			self._children.append(item)
 			item._parent = self
 			return True
@@ -517,19 +517,6 @@ class Token:
 			tokens.append(cls("tag", tag, (tag,)))
 
 		return tokens
-
-	@classmethod
-	def evaluate(cls, tokens):
-		"""Turn a list of tokens into their classes"""
-		result = []
-		for token in tokens:
-			name, args = token.name, token.args
-			if name == "special":
-				result.append(cls._classes[name](*args, token=token, category=token.subname))
-			else:
-				result.append(cls._classes[name](*args, token=token))
-
-		return result
 
 	def __init__(self, name, raw, args, subname=None):
 		self.name = name
