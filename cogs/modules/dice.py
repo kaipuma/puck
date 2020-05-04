@@ -181,7 +181,7 @@ class Entry:
 	def as_tag(self):
 		s = ""
 		if self.token is not None:
-			s += self.token.raw + " "
+			s += self.token.raw
 
 		for child in self._children:
 			s += child.as_tag()
@@ -435,10 +435,6 @@ class MasterTag(Entry, RootEntry):
 	"""Each roll will have one MasterTag that has all other tags as children."""
 	_allowed_additions = (Tag,)
 
-	def as_tag(self):
-		# turn any series of whitespace into a single space
-		return " ".join(re.findall(r"\S+", super().as_tag()))
-
 	@property
 	def is_empty(self):
 		return not self._children
@@ -455,7 +451,7 @@ class Token:
 		counters = r"(num|count|pas|success)",
 		modifier = r"(xx|x|<=|>=|<|>|=|min|max)"
 	)
-	_master_regex = "|".join(fr"(?P<{k}>{v})" for k, v in _regexes.items())
+	_master_regex = "|".join(fr"(?P<{k}>{v}\s*)" for k, v in _regexes.items())
 
 	@classmethod
 	def _get_special_regexes(cls):
@@ -477,23 +473,13 @@ class Token:
 		"""Parse a string into tokens"""
 		# prepare the master regex
 		sregs = cls._get_special_regexes()
-		master = "|".join(fr"(?P<special_{k}>{v})" for k, v in sregs.items())
+		master = "|".join(fr"(?P<special_{k}>{v}\s*)" for k, v in sregs.items())
 		master += "|" + cls._master_regex
+		master += r"|(?P<tag>(\S*\s*))"
 
 		tokens = []
-		prev_end = None
 		# iterate over all matches
 		for match in re.finditer(master, arg, flags=re.I):
-			# add everything that doesn't match as "tag" tokens
-			# of note, this excludes strings of just whitespace
-			if prev_end is None:
-				tag = arg[:match.start()]
-			else:
-				tag = arg[prev_end:match.start()]
-			if tag.strip():
-				tokens.append(cls("tag", tag, (tag,)))
-			prev_end = match.end()
-
 			# collect the groups that recieved values
 			groups = []
 			for group in match.groups():
@@ -510,11 +496,6 @@ class Token:
 				tokens.append(cls("special", raw, args, special.group(1)))
 			else:
 				tokens.append(cls(name, raw, args))
-
-		# add any trailing "tag" parts
-		tag = arg[prev_end or 0:]
-		if tag.strip():
-			tokens.append(cls("tag", tag, (tag,)))
 
 		return tokens
 
@@ -560,7 +541,7 @@ class Roll:
 			else:
 				new = cls(*args, token=token)
 
-			# any tags get added to the master tag, this should never fail
+			# any tags (and whitespace) get added to the master tag. this should never fail
 			if isinstance(new, Tag):
 				self.tag.add(new)
 
@@ -589,7 +570,7 @@ class Roll:
 						raise ValueError(f"\"{new!r}\" cannot be a base or tag.")
 					self.tag.add(newtag)
 
-			# set the next "prev" value to this token's class
+			# set the next "prev" value to this token's class, if applicable
 			prev = new
 
 		# set self.tag to None if no tags were added
