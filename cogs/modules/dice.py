@@ -118,9 +118,13 @@ class DiceList(list):
 			dp = die.depth
 			if dp not in data:
 				data[dp] = {True:[], False:[]}
-			data[dp][die.valid].append(die)
+			if dp == -1:
+				data[dp][die.valid].append(f"{die.value:+}")
+			else:
+				data[dp][die.valid].append(str(die))
 
 		lists = []
+		flats = []
 		for depth, dice in sorted(data.items()):
 			if depth == -1:
 				parens = ("(", ")")
@@ -131,12 +135,15 @@ class DiceList(list):
 
 			s = parens[0]
 			if data[depth][False]:
-				s += f"~~{', '.join(map(str, data[depth][False]))}~~"
+				s += f"~~{', '.join(data[depth][False])}~~"
 				if data[depth][True]:
 					s += ", "
-			lists.append(s + ", ".join(map(str, data[depth][True])) + parens[1])
+			if depth == -1:
+				flats.append(s + ", ".join(data[depth][True]) + parens[1])
+			else:
+				lists.append(s + ", ".join(data[depth][True]) + parens[1])
 
-		s = " ".join(lists)
+		s = " ".join(lists + flats)
 		if isinstance(self.override, bool):
 			s += f" -> {'Success' if self.override else 'Failure'}"
 		elif self.override is not None:
