@@ -216,10 +216,11 @@ class NoChild(Entry):
 
 class Number(Entry, RootEntry):
 	"""Represents a number, wither as an argument for a modifier, or a flat addition to a roll."""
-	__slots__ = "value"
+	__slots__ = "value", "total"
 	def __init__(self, value, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.value = int(value)
+		self.total = self.value
 		self.invoke = f"[{self.value:+}]"
 		self.result = f"{self.value:+}"
 
@@ -305,8 +306,8 @@ class Modifier(OneChild):
 		self._evaluated = True
 		return self
 
-class Counters(Modifier, NoChild):
-	"""Represents a modifier to a numeric roll that counts valid dice"""
+class Flag(Modifier, NoChild):
+	"""Represents a modifier to a numeric roll without an argument"""
 	__slots__ = ()
 	# this stores the defalt value, and whether to hide that 
 	# value if it's the one used, and any comparison function
@@ -314,7 +315,8 @@ class Counters(Modifier, NoChild):
 		"num": (0, True, None),
 		"count": (0, True, None),
 		"pas": (0, True, None),
-		"success": (0, True, None)
+		"success": (0, True, None),
+		"quiet": (0, True, None)
 	}
 
 	def evaluate(self, dice:DiceList, flat:int = 0):
@@ -330,7 +332,7 @@ class Counters(Modifier, NoChild):
 class Ranged(Entry, RootEntry):
 	"""Represents a dice roll in the form "XrY-Z", which rolls X dice numbered Y-Z."""
 	__slots__ = "sign", "pool", "minv", "maxv", "roll", "_invoke"
-	_allowed_additions = Number, Flat, Modifier, Counters
+	_allowed_additions = Number, Flat, Modifier, Flag
 	def __init__(self, sign, pool, minv, maxv, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.sign = "-" if sign == "-" else "+"
@@ -349,6 +351,10 @@ class Ranged(Entry, RootEntry):
 		self.result = self.roll.result
 		self.invoke = self._invoke
 		for mod in self._children:
+			if isinstance(mod, Flag) \
+			and mod.name == "quiet":
+				self.invoke = f"{self._invoke} [...]"
+				break
 			self.invoke += " " + mod.invoke
 		return self
 
@@ -424,20 +430,30 @@ class Special(Entry, RootEntry):
 		allrolls = self.roll + other.roll
 		new.roll = type(new).reduce(allrolls, new.category)
 
+class NewBase(Entry, RootEntry):
+	"""Represents a request to force the beginning of a new base next"""
+	__slots__ = ()
+
 class Tag(Entry):
 	"""Represents miscellaneous other text used to tag a roll."""
-	_allowed_additions = Modifier, Number, Flat, Counters
+	__slots__ = "value"
+	_allowed_additions = Modifier, Number, Flat, Flag, NewBase
 	def __init__(self, value, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.value = value
 
 class MasterTag(Entry, RootEntry):
 	"""Each roll will have one MasterTag that has all other tags as children."""
+	__slots__ = ()
 	_allowed_additions = (Tag,)
 
 	@property
 	def is_empty(self):
 		return not self._children
+
+class Hidden(Entry, RootEntry):
+	"""Represents a request to hide the rolls and just show the results"""
+	__slots__ = ()
 
 class Token:
 	__slots__ = "name", "args", "raw", "subname"
@@ -448,8 +464,10 @@ class Token:
 		range = r"([+-]?)(\d*)r(\d+)-(\d+)",
 		flat = r"([+-]\d+)",
 		number = r"(\d+)",
-		counters = r"(num|count|pas|success)",
-		modifier = r"(xx|x|<=|>=|<|>|=|min|max)"
+		flag = r"(num|count|pas|success|quiet)",
+		hidden = r"hidden",
+		modifier = r"(xx|x|<=|>=|<|>|=|min|max)",
+		newbase = r","
 	)
 	_master_regex = "|".join(fr"(?P<{k}>{v}\s*)" for k, v in _regexes.items())
 
@@ -516,20 +534,25 @@ class Roll:
 		"range": Ranged,
 		"flat": Flat,
 		"number": Number,
-		"counters": Counters,
+		"flag": Flag,
 		"modifier": Modifier,
+		"hidden": Hidden,
 		"special": Special,
-		"tag": Tag
+		"tag": Tag,
+		"newbase": NewBase
 	}
 
 	def __init__(self, tokens):
 		self.tokens = tokens
 		self.tag = MasterTag()
 		self.raw = " ".join(map(lambda t:t.raw.strip(), tokens))
+		self.hidden = False
 
 		# here we turn each token into a full "Entry" subclass instance
 		# then add each into a series of tree structures for evaluating
 		# "prev" will track the last "Entry" subclass instance created
+		# "nextnew" will track requests to begin a new base next instead
+		nextnew = False
 		prev = None
 		self.bases = []
 		for token in tokens:
@@ -545,16 +568,35 @@ class Roll:
 			if isinstance(new, Tag):
 				self.tag.add(new)
 
+			# if this is flagged as hidden, save that and discard the Entry
+			elif isinstance(new, Hidden):
+				self.hidden = True
+				continue
+
 			# if this isn't the first token, try to add it to the prev tree
 			elif prev is not None:
-				success = prev.add(new)
+				# if the next one is requested to be a base, don't try adding it first
+				if nextnew:
+					success = False
+				else:
+					success = prev.add(new)
 
 				# if it fails and is a possible root, add it to bases
 				# otherwise, raise an error
 				if success is False:
-					if not isinstance(new, RootEntry):
+					# if it fails as a NewBase, then it wasn't just a comma
+					# and is actualy signaling a new base request
+					if isinstance(new, NewBase):
+						nextnew = True
+
+					# if it fails and is not a possible base, raise an error
+					elif not isinstance(new, RootEntry):
 						raise ValueError(f"Cannot fit \"{new!r}\" in tree.")
-					self.bases.append(new)
+
+					# otherwise, add it as a base
+					else:
+						self.bases.append(new)
+						nextnew = False
 
 			# if it's the first token
 			else:

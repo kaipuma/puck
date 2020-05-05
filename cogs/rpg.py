@@ -77,6 +77,10 @@ class RPG(cmds.Cog):
 		totals = ", ".join(roll.totals) or "No dice rolled"
 		plural = "" if len(roll.bases) == 1 else "s"
 
+		# check if the roll is hidden
+		if roll.hidden:
+			results = "[REDACTED]"
+
 		# create the embed and add the values
 		ebd = Embed(
 			color = Color.from_rgb(*colcon["roll"]),
