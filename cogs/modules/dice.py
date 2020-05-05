@@ -258,18 +258,18 @@ class Modifier(OneChild):
 		self._default = configs[0]
 		self._hidden = configs[1]
 		self._comp = configs[2]
-		self.invoke = f"[{self.name}]"
+		self.invoke = f" [{self.name}]"
 		if not self._hidden:
-			self.invoke = f"[{self.name} {self._default}]"
+			self.invoke = f" [{self.name} {self._default}]"
 
 	def evaluate(self, dice:DiceList, flat:int = 0):
 		value = self._default
 		if self._children:
 			value = self._children[0].value
 		
-		self.invoke = f"[{self.name} {value}]"
+		self.invoke = f" [{self.name} {value}]"
 		if self._hidden and value == self._default:
-			self.invoke = f"[{self.name}]"
+			self.invoke = f" [{self.name}]"
 
 		if self.name in ("min", "max"):
 			ordered = sorted(dice, reverse=(self.name == "max"))
@@ -344,18 +344,32 @@ class Ranged(Entry, RootEntry):
 		self.invoke = self._invoke
 
 	def evaluate(self):
-		flat = sum(c.value for c in self._children if isinstance(c, Flat))
+		sort = dict(flat = [], x = [], comp = [], flag = [])
 		for child in self._children:
+			if isinstance(child, Flat):
+				sort["flat"].append(child)
+			elif isinstance(child, Flag):
+				sort["flag"].append(child)
+			elif child.name in ("x", "xx"):
+				sort["x"].append(child)
+			else:
+				sort["comp"].append(child)
+
+		flat = 0
+		for child in sort["flat"]:
+			child.evaluate(self.roll, flat=flat)
+			flat += child.value
+
+		for child in sort["x"] + sort["comp"] + sort["flag"]:
 			child.evaluate(self.roll, flat=flat)
 
 		self.result = self.roll.result
 		self.invoke = self._invoke
-		for mod in self._children:
-			if isinstance(mod, Flag) \
-			and mod.name == "quiet":
-				self.invoke = f"{self._invoke} [...]"
-				break
-			self.invoke += " " + mod.invoke
+		if any(c.name == "quiet" for c in sort["flag"]):
+			self.invoke = f"{self._invoke} [...]"
+		else:
+			for mod in self._children:
+				self.invoke += mod.invoke
 		return self
 
 	@property
@@ -643,7 +657,7 @@ class Roll:
 		specials = {}
 		for base in self.bases:
 			# add any boolean numeric results
-			if isinstance(base, (Number, Ranged)):
+			if isinstance(base, (Flat, Ranged)):
 				if isinstance(base.total, bool):
 					if success is None: success = True
 					success &= base.total
@@ -683,7 +697,7 @@ class PresetConverterError(cmds.CommandError): pass
 class PresetConverter(cmds.Converter):
 	async def convert(self, ctx, arg: str):
 		arg = arg.lower()
-		
+
 		with shelve.open("data/presets.shelf") as shelf:
 			# first, check if there's such a preset for this user
 			if "user" in shelf \
