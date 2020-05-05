@@ -278,7 +278,7 @@ class RPG(cmds.Cog):
 				points["dark"] = new["dark"]
 
 		elif mod is not None:
-			if (points + mod).most_common()[-1][1] < 0:
+			if mod["light"] > points["light"] or mod["dark"] > points["dark"]:
 				await ctx.send("Points cannot go below zero.\nPoints not adjusted.")
 			else:
 				points.update(mod)
