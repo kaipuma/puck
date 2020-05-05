@@ -1,3 +1,4 @@
+from collections import Counter
 from typing import Optional, Union
 import json
 import re
@@ -13,6 +14,9 @@ from .modules.configs import dice_config as dcon
 from .modules.configs import rolls_config as rcon
 
 class RPG(cmds.Cog):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self._force_points = {}
 	def _parse_emoji(self, ctx, text):
 		for name in set(re.findall(r":(\w+?):", text)):
 			emoji = utils.get(ctx.guild.emojis, name=name)
@@ -259,3 +263,64 @@ class RPG(cmds.Cog):
 		msg, ebd = self._gencard("o", tag)
 		for channel in self._getshared(ctx):
 			await channel.send(msg, embed = ebd)
+
+	async def _send_force_points(self, ctx, mod = None, new = None):
+		catid = ctx.channel.category_id
+		if catid not in self._force_points:
+			self._force_points[catid] = Counter({"light":0, "dark":0})
+		points = self._force_points[catid]
+
+		if new is not None:
+			if new["light"] < 0 or new["dark"] < 0:
+				await ctx.send("Cannot set points below zero.\nPoints not adjusted.")
+			else:
+				points["light"] = new["light"]
+				points["dark"] = new["dark"]
+
+		elif mod is not None:
+			if (points + mod).most_common()[-1][1] < 0:
+				await ctx.send("Points cannot go below zero.\nPoints not adjusted.")
+			else:
+				points.update(mod)
+
+		lsebd = Embed(
+			title = f"Light side: {points['light']}",
+			color = Color.from_rgb(*colcon["lightside"])
+		)
+		dsebd = Embed(
+			title = f"Dark side: {points['dark']}",
+			color = Color.from_rgb(*colcon["darkside"])
+		)
+
+		await ctx.send(embed=lsebd)
+		await ctx.send(embed=dsebd)
+
+	@cmds.group(aliases=["sw"], brief="Starwars commands", invoke_without_command=True)
+	async def starwars(self, ctx):
+		"""A group of commands for starwars rpgs"""
+		await ctx.send_help(ctx.command)
+
+	@starwars.command(name="light", aliases=["l"], brief="Flip a light-side point")
+	async def starwars_light(self, ctx, num: Optional[int] = 1):
+		"""Flip one or more light side points to dark side points."""
+		await self._send_force_points(ctx, mod = Counter(light = -num, dark = num))
+
+	@starwars.command(name="dark", aliases=["d"], brief="Flip a dark-side point")
+	async def starwars_dark(self, ctx, num: Optional[int] = 1):
+		"""Flip one or more dark side points to light side points."""
+		await self._send_force_points(ctx, mod = Counter(light = num, dark = -num))
+
+	@starwars.command(name="clear", aliases=["c"], brief="Clear force points")
+	async def starwars_clear(self, ctx, light: Optional[int] = 0, dark: Optional[int] = 0):
+		"""Clear all light  and dark side points. Optionally also set a new pool of them."""
+		await self._send_force_points(ctx, new = Counter(light = light, dark = dark))
+
+	@starwars.command(name="set", aliases=["s"], brief="Set force points")
+	async def starwars_set(self, ctx, light: int, dark: int):
+		"""Set the pool of light and dark side force points"""
+		await self._send_force_points(ctx, new = Counter(light = light, dark = dark))
+
+	@starwars.command(name="points", aliases=["p"], brief="List force points")
+	async def starwars_points(self, ctx):
+		"""Show the pool of light and dark side force points"""
+		await self._send_force_points(ctx)
