@@ -695,15 +695,16 @@ class RollConverter(cmds.Converter):
 
 class PresetConverterError(cmds.CommandError): pass
 class PresetConverter(cmds.Converter):
-	async def convert(self, ctx, arg: str):
+	async def convert(self, ctx, arg: str, uid: int = None):
 		arg = arg.lower()
+		uid = uid or ctx.author.id
 
 		with shelve.open("data/presets.shelf") as shelf:
 			# first, check if there's such a preset for this user
 			if "user" in shelf \
-			and str(ctx.author.id) in shelf["user"] \
-			and arg in shelf["user"][str(ctx.author.id)]:
-				return shelf["user"][str(ctx.author.id)][arg]
+			and str(uid) in shelf["user"] \
+			and arg in shelf["user"][str(uid)]:
+				return shelf["user"][str(uid)][arg]
 
 			# then check if there's such a preset for this channel
 			if "channel" in shelf \

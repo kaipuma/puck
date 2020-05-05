@@ -185,14 +185,29 @@ class RPG(cmds.Cog):
 		await ctx.send(embed=ebd)
 
 	@roll.group(name="preset", aliases=["pset", "p"], brief="view and create presets", invoke_without_command=True)
-	async def roll_preset(self, ctx, name: Optional[str] = None, *, roll: Optional[TokenConverter] = None):
+	async def roll_preset(
+			self, 
+			ctx, 
+			user: Optional[cmds.MemberConverter] = None, 
+			name: Optional[str] = None, 
+			*, 
+			roll: Optional[TokenConverter] = None
+		):
 		"""
 		This command is used to view your presets, as well as create new ones.
 		When used without arguments, it will list all the possible presets you can use here, including channel-specific and global ones.
 		When used with one argument, it will show you what that preset currently represents for you, i.e. what it would get replaced with when you try to use it in a roll.
 		When used with more arguments, it will create a new preset. The first argument is used as a name, and the rest are what thaa preset will be replaced with when used in a roll.
 		For example, calling "roll preset test 2d6 +1" means that a later roll of "roll test +3" will be treated as "roll 2d6 +1 +3".
+
+		Optionally you can specify a user before any arguments, in which case any information returned will be that which pertains to that user.
+		No you can't set other people's presets, just view them.
 		"""
+		uid = ctx.author.id
+		mention = ctx.author.mention
+		if user is not None:
+			uid = user.id
+			mention = user.name
 		if name is None:
 			# strt with any global presets
 			ps = set(rcon.keys())
@@ -202,20 +217,23 @@ class RPG(cmds.Cog):
 					ps.update(shelf["channel"][str(ctx.channel.id)].keys())
 
 				# check if there's presets for this user
-				if "user" in shelf and str(ctx.author.id) in shelf["user"]:
-					ps.update(shelf["user"][str(ctx.author.id)].keys())
+				if "user" in shelf and str(uid) in shelf["user"]:
+					ps.update(shelf["user"][str(uid)].keys())
 
-			await ctx.send(f"The possible presets for {ctx.author.mention} in this channel are:\n" + ", ".join(ps))
+			await ctx.send(f"The possible presets for {mention} in this channel are:\n" + ", ".join(ps))
 			return
 
 		if roll is None:
 			try:
-				roll = await PresetConverter().convert(ctx, name)
+				roll = await PresetConverter().convert(ctx, name, uid)
 			except PresetConverterError:
 				await ctx.send(f"I don't see a preset for you named \"{name}\"")
 			else:
-				roll = " ".join(map(lambda t: t.raw.strip(), roll))
-				await ctx.send(f"That preset for you here would roll \"{roll}\"")
+				if uid != ctx.author.id and any(t.name == "hidden" for t in roll):
+					await ctx.send("That preset is hidden")
+				else:
+					roll = " ".join(map(lambda t: t.raw.strip(), roll))
+					await ctx.send(f"That preset for {mention} here would roll \"{roll}\"")
 			return
 
 		name = name.lower()
