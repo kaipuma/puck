@@ -266,9 +266,14 @@ class RPG(cmds.Cog):
 
 	async def _send_force_points(self, ctx, mod = None, new = None):
 		catid = ctx.channel.category_id
-		if catid not in self._force_points:
-			self._force_points[catid] = Counter({"light":0, "dark":0})
-		points = self._force_points[catid]
+		with shelve.open("data/sw.shelf") as shelf:
+			if "force points" not in shelf:
+				shelf["force points"] = {}
+			allpoints = shelf["force points"]
+
+		if catid not in allpoints:
+			allpoints[catid] = Counter({"light":0, "dark":0})
+		points = allpoints[catid]
 
 		if new is not None:
 			if new["light"] < 0 or new["dark"] < 0:
@@ -294,6 +299,9 @@ class RPG(cmds.Cog):
 
 		await ctx.send(embed=lsebd)
 		await ctx.send(embed=dsebd)
+
+		with shelve.open("data/sw.shelf") as shelf:
+			shelf["force points"] = allpoints
 
 	@cmds.group(aliases=["sw"], brief="Starwars commands", invoke_without_command=True)
 	async def starwars(self, ctx):
