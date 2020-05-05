@@ -683,22 +683,23 @@ class PresetConverterError(cmds.CommandError): pass
 class PresetConverter(cmds.Converter):
 	async def convert(self, ctx, arg: str):
 		arg = arg.lower()
-		# check global configs first
-		for name, text in rcon.items():
-			if arg == name:
-				return Token.parse(text)
-
+		
 		with shelve.open("data/presets.shelf") as shelf:
+			# first, check if there's such a preset for this user
+			if "user" in shelf \
+			and str(ctx.author.id) in shelf["user"] \
+			and arg in shelf["user"][str(ctx.author.id)]:
+				return shelf["user"][str(ctx.author.id)][arg]
+
 			# then check if there's such a preset for this channel
 			if "channel" in shelf \
 			and str(ctx.channel.id) in shelf["channel"] \
 			and arg in shelf["channel"][str(ctx.channel.id)]:
 				return shelf["channel"][str(ctx.channel.id)][arg]
 
-			# last, check if there's such a preset for this user
-			if "user" in shelf \
-			and str(ctx.author.id) in shelf["user"] \
-			and arg in shelf["user"][str(ctx.author.id)]:
-				return shelf["user"][str(ctx.author.id)][arg]
+		# lastly, check global configs
+		for name, text in rcon.items():
+			if arg == name:
+				return Token.parse(text)
 
 		raise PresetConverterError(f"Could not find preset for {arg}")
