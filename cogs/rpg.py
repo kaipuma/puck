@@ -8,7 +8,7 @@ from discord.ext import commands as cmds
 import discord.utils as utils
 from discord import Embed, Color
 
-from .modules.dice import TokenConverter, PresetConverter, Roll
+from .modules.dice import TokenConverter, PresetConverter, PresetConverterError, Roll
 from .modules.configs import color_config as colcon
 from .modules.configs import dice_config as dcon
 from .modules.configs import rolls_config as rcon
@@ -184,8 +184,15 @@ class RPG(cmds.Cog):
 
 		await ctx.send(embed=ebd)
 
-	@roll.group(name="preset", aliases=["pset"], brief="view and create presets", invoke_without_command=True)
-	async def roll_preset(self, ctx, name: Optional[PresetConverter] = None):
+	@roll.group(name="preset", aliases=["pset", "p"], brief="view and create presets", invoke_without_command=True)
+	async def roll_preset(self, ctx, name: Optional[str] = None, *, roll: Optional[TokenConverter] = None):
+		"""
+		This command is used to view your presets, as well as create new ones.
+		When used without arguments, it will list all the possible presets you can use here, including channel-specific and global ones.
+		When used with one argument, it will show you what that preset currently represents for you, i.e. what it would get replaced with when you try to use it in a roll.
+		When used with more arguments, it will create a new preset. The first argument is used as a name, and the rest are what thaa preset will be replaced with when used in a roll.
+		For example, calling "roll preset test 2d6 +1" means that a later roll of "roll test +3" will be treated as "roll 2d6 +1 +3".
+		"""
 		if name is None:
 			# strt with any global presets
 			ps = set(rcon.keys())
@@ -198,14 +205,19 @@ class RPG(cmds.Cog):
 				if "user" in shelf and str(ctx.author.id) in shelf["user"]:
 					ps.update(shelf["user"][str(ctx.author.id)].keys())
 
-			await ctx.send(f"The possible presets for {ctx.author.mention} in this channel are: " + ", ".join(ps))
+			await ctx.send(f"The possible presets for {ctx.author.mention} in this channel are:\n" + ", ".join(ps))
 			return
 
-		roll = " ".join(map(lambda t: t.raw.strip(), name))
-		await ctx.send(f"That preset for you here would roll \"{roll}\"")
+		if roll is None:
+			try:
+				roll = await PresetConverter().convert(ctx, name)
+			except PresetConverterError:
+				await ctx.send(f"I don't see a preset for you named \"{name}\"")
+			else:
+				roll = " ".join(map(lambda t: t.raw.strip(), roll))
+				await ctx.send(f"That preset for you here would roll \"{roll}\"")
+			return
 
-	@roll_preset.command(name="set", aliases=["s"], brief="set a user preset")
-	async def roll_preset_set(self, ctx, name: str, *, roll: TokenConverter):
 		name = name.lower()
 		with shelve.open("data/presets.shelf") as shelf:
 			if "user" not in shelf:
@@ -222,10 +234,14 @@ class RPG(cmds.Cog):
 
 			udict[uid][name] = roll
 			shelf["user"] = udict
-			await ctx.send("Preset set, try it out!")
+		await ctx.send("Preset set, try it out!")
 
 	@roll_preset.command(name="remove", aliases=["r"], brief="remove a user preset")
 	async def roll_preset_remove(self, ctx, name: str):
+		"""
+		This will clear the user preset for you with the given name.
+		Of note, this will not clear channel-specific or global presets.
+		"""
 		name = name.lower()
 		with shelve.open("data/presets.shelf") as shelf:
 			if "user" not in shelf:
@@ -249,7 +265,6 @@ class RPG(cmds.Cog):
 		"""
 		Invokes the x-card. The x-card is a device used to indicate that the current topic of conversation is making you uncomfortable. Please don't be embarrassed to use it, especially since it can be used anonymously (by sending the command to the bot in a direct message). It will send a message to the designated spam channel announcing that someone anonymous has invoked the x-card.
 		"""
-
 		msg, ebd = self._gencard("x", tag)
 		for channel in self._getshared(ctx):
 			await channel.send(msg, embed = ebd)
@@ -259,7 +274,6 @@ class RPG(cmds.Cog):
 		"""
 		Invokes the o-card. This is the inverse of the x-card. Using this indicates that you're loving the current role-play, as an encouragement. This sends a message to the designated spam channel announcing that someone anonymous has invoked the o-card.
 		"""
-
 		msg, ebd = self._gencard("o", tag)
 		for channel in self._getshared(ctx):
 			await channel.send(msg, embed = ebd)
