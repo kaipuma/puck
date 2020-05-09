@@ -1,3 +1,4 @@
 configs/token.txt
 configs/data.json
 __pycache__/
+venv/
