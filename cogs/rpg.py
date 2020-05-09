@@ -1,6 +1,9 @@
 from collections import Counter
+from datetime import datetime
 from typing import Optional, Union
 import json
+import os
+import random
 import re
 import shelve
 
@@ -364,3 +367,12 @@ class RPG(cmds.Cog):
 	async def starwars_points(self, ctx):
 		"""Show the pool of light and dark side force points"""
 		await self._send_force_points(ctx)
+
+	@cmds.command(brief="This die broke. Yeet")
+	async def banish(self, ctx, seed: Optional[str] = ""):
+		"""
+		Banish the dice you were using in favor of ones that can roll better.
+		(under the hood this does actually re-seed the dice roller)
+		"""
+		random.seed(str(datetime.now()) + seed + str(os.urandom(3)))
+		await ctx.send("I've banished those dice for you! lets hope these new ones are better...")
