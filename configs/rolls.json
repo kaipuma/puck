@@ -10,5 +10,6 @@
 	"heroic": "Heroic d20 >= 24 success quiet",
 	"immortal": "Immortal d20 >= 27 success quiet",
 	"impossible": "Impossible d20 >= 30 success quiet",
-	"coc": "Call of Cthulu d100 success quiet <="
+	"coc": "Call of Cthulu d100 success quiet <=",
+	"dndstats": "Stat Array: 4d6 max 3 subtotal quiet 4d6 max 3 subtotal quiet 4d6 max 3 subtotal quiet 4d6 max 3 subtotal quiet 4d6 max 3 subtotal quiet 4d6 max 3 subtotal quiet"
 }

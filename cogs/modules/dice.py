@@ -323,7 +323,9 @@ class Flag(Modifier, NoChild):
 		"count": (0, True, None),
 		"pas": (0, True, None),
 		"success": (0, True, None),
-		"quiet": (0, True, None)
+		"quiet": (0, True, None),
+		"subtotal": (0, True, None),
+		"sub": (0, True, None)
 	}
 
 	def evaluate(self, dice:DiceList, flat:int = 0):
@@ -332,6 +334,9 @@ class Flag(Modifier, NoChild):
 
 		elif self.name in ("pas", "success"):
 			dice.override = any(d.valid for d in dice)
+
+		elif self.name in ("subtotal", "sub"):
+			dice.override = sum(d.value for d in dice if d.valid)
 
 		self._evaluated = True
 		return self
@@ -485,7 +490,7 @@ class Token:
 		range = r"([+-]?)(\d*)r(\d+)-(\d+)",
 		flat = r"([+-]\d+)",
 		number = r"(\d+)",
-		flag = r"(num|count|pas|success|quiet)",
+		flag = fr"({'|'.join(Flag._configs.keys())})",
 		hidden = r"hidden",
 		modifier = r"(xx|x|<=|>=|<|>|=|min|max)",
 		newbase = r","
