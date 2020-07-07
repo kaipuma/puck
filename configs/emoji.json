@@ -43,5 +43,13 @@
 	"./emoji/spectaculars/drawback.png":			"spec_drawback",
 	"./emoji/spectaculars/blank.png":				"spec_blank",
 	"./emoji/spectaculars/advantage.png":			"spec_advantage",
-	"./emoji/spectaculars/challenge.png":			"spec_challenge"
+	"./emoji/spectaculars/challenge.png":			"spec_challenge",
+
+	"./emoji/week/sunday.png":						"sunday",
+	"./emoji/week/monday.png":						"monday",
+	"./emoji/week/tuesday.png":						"tuesday",
+	"./emoji/week/wednesday.png":					"wednesday",
+	"./emoji/week/thursday.png":					"thursday",
+	"./emoji/week/friday.png":						"friday",
+	"./emoji/week/saturday.png":					"saturday",
 }
