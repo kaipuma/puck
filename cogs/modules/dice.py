@@ -351,7 +351,10 @@ class Ranged(Entry, RootEntry):
 		self.pool = int(pool or 1)
 		self.minv = int(minv)
 		self.maxv = int(maxv)
-		self.roll = DiceList(self.pool, self.minv, self.maxv)
+		if self.sign == "+":
+			self.roll = DiceList(self.pool, self.minv, self.maxv)
+		else:
+			self.roll = DiceList(self.pool, -self.maxv, -self.minv)
 		self._invoke = f"{self.sign}{self.pool}r{self.minv}-{self.maxv}"
 		self.invoke = self._invoke
 
