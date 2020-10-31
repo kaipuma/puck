@@ -292,22 +292,22 @@ class Modifier(OneChild):
 		elif self.name == "x":
 			# never evaluate this modifier more than once
 			if self._evaluated: return self
-			thold = dice.maxv - value
-			toadd = sum(d.value > thold for d in dice if d.depth >= 0)
+			thold = abs(dice.maxv) - value
+			toadd = sum(abs(d.value) > thold for d in dice if d.depth >= 0)
 			for _ in range(toadd):
 				dice.new(depth=1)
 
 		elif self.name == "xx":
 			# never evaluate this modifier more than once
 			if self._evaluated: return self
-			thold = dice.maxv - value
-			toadd = sum(d.value > thold for d in dice if d.depth >= 0)
+			thold = max(abs(dice.maxv), abs(dice.minv)) - value
+			toadd = sum(abs(d.value) > thold for d in dice if d.depth >= 0)
 			level = 1
 			while (toadd > 0) and (level < 64):
 				for _ in range(toadd):
 					dice.new(depth=level)
 					# only decrement toadd if the value misses the threshold
-					toadd -= dice[-1].value <= thold 
+					toadd -= abs(dice[-1].value) <= thold 
 				level += 1
 
 		self._evaluated = True
