@@ -297,7 +297,7 @@ class RPG(cmds.Cog):
 		Invokes the o-card. This is the inverse of the x-card. Using this indicates that you're loving the current role-play, as an encouragement. This sends a message to the designated spam channel announcing that someone anonymous has invoked the o-card.
 		"""
 		msg, ebd = self._gencard("o", tag)
-		for channel in self._getshared(ctx):
+		for channel in await self._getshared(ctx):
 			await channel.send(msg, embed = ebd)
 
 	async def _send_force_points(self, ctx, mod = None, new = None):
