@@ -43,7 +43,7 @@ class RPG(cmds.Cog):
 
 		return ("@here", Embed(color = color, title = title, description = desc))
 
-	def _getshared(self, ctx):
+	async def _getshared(self, ctx):
 		"""Gets a list of xcard channels shared by the ctx.author and the bot"""
 		channels = []
 		with open("./data/xcard.json", "r") as file:
@@ -51,7 +51,8 @@ class RPG(cmds.Cog):
 		# for any guild the bot is in
 		for guild in ctx.bot.guilds:
 			# skip any guild the sender isn't in
-			if not guild.get_member(ctx.author.id): continue
+			if not await guild.fetch_member(ctx.author.id):
+				continue
 
 			# find the channel in any shared guilds to send msg to
 			if str(guild.id) in data and "general" in data[str(guild.id)]:
@@ -287,7 +288,7 @@ class RPG(cmds.Cog):
 		Invokes the x-card. The x-card is a device used to indicate that the current topic of conversation is making you uncomfortable. Please don't be embarrassed to use it, especially since it can be used anonymously (by sending the command to the bot in a direct message). It will send a message to the designated spam channel announcing that someone anonymous has invoked the x-card.
 		"""
 		msg, ebd = self._gencard("x", tag)
-		for channel in self._getshared(ctx):
+		for channel in await self._getshared(ctx):
 			await channel.send(msg, embed = ebd)
 
 	@cmds.command(aliases=["o"], brief="Invoke the o-card")
